@@ -1,0 +1,48 @@
+<div class="container">
+    <app-spinner></app-spinner>
+    <router-outlet></router-outlet>
+    <form class="form mat-elevation-z8" autocomplete="off" [formGroup]="loginForm" (ngSubmit)="logar()">
+
+        <h1>Help Desk - Dicas de um DEV</h1>
+
+        <img src="assets/img/login-image.svg" alt="Help Desk - Dicas de um DEV">
+
+        <mat-form-field class="full-width" appearance="outline">
+            <mat-label>E-mail</mat-label>
+            <input
+                    formControlName="email"
+                    required
+                    matInput
+                    placeholder="Ex. meunome@mail.com"
+                    autocomplete="off">
+            <mat-icon matSuffix>email</mat-icon>
+            <mat-error *ngIf="loginForm.controls.email.hasError('email')">E-mail inválido</mat-error>
+            <mat-error *ngIf="loginForm.controls.email.hasError('required')">E-mail é obrigatório</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Senha</mat-label>
+            <div class="password-container">
+                <input
+                        formControlName="senha"
+                        required
+                        [type]="senhaVisible ? 'text' : 'password'"
+                        matInput
+                        placeholder="Ex. 1234567891"
+                        autocomplete="off">
+                <button mat-icon-button matSuffix (click)="toggleSenhaVisibility()" class="senha-visibility-button">
+                    <mat-icon>{{ senhaVisible ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+            </div>
+            <mat-error *ngIf="loginForm.controls.senha.hasError('required')">Senha é obrigatória</mat-error>
+            <mat-error *ngIf="loginForm.controls.senha.hasError('minlength')">Senha deve ter pelo menos 10 caracteres</mat-error>
+            <mat-error *ngIf="loginForm.controls.senha.hasError('invalidPassword')">
+                {{ getErrorMessage('senha') }}
+            </mat-error>
+        </mat-form-field>
+
+        <button type="submit" [disabled]="!loginForm.valid" class="full-width mat-elevation-z4" mat-stroked-button color="primary">
+            Login
+        </button>
+    </form>
+</div>

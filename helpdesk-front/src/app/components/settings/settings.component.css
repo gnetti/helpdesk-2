@@ -1,0 +1,94 @@
+.container {
+    width: 35rem;
+    margin: auto;
+    padding: 1rem;
+    border-radius: .6rem;
+}
+
+.full-width {
+    width: 100%;
+}
+
+h1, p {
+    text-align: center;
+}
+
+p {
+    margin-top: 4rem;
+    opacity: .5;
+}
+
+img {
+    height: 12rem;
+    margin: auto;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+mat-form-field {
+    margin-bottom: 16px;
+}
+
+button {
+    margin-top: .5rem;
+    width: 100%;
+}
+
+mat-icon {
+    opacity: .8;
+}
+
+.section {
+    margin-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.password-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.password-container input {
+    flex: 1;
+    padding-right: 48px;
+}
+
+.password-visibility-button {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 24px;
+    width: 24px;
+    background-color: transparent;
+    color: rgba(0, 0, 0, 0.54);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.info-button {
+    position: absolute;
+    right: 0;
+    top: -30px;
+    margin: 0;
+    height: 24px;
+    width: 24px;
+    color: rgba(0, 0, 0, 0.54);
+    z-index: 2;
+}
+
+.info-button mat-icon {
+    font-size: 18px;
+}
+
+.mat-tooltip {
+    z-index: 1000;
+}

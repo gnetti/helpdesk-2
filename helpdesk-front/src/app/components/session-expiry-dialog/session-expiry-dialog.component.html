@@ -1,0 +1,21 @@
+<div class="mat-dialog-container">
+    <div class="session-expiry-card">
+                <div *ngIf="!sessionExpired">
+        <h1>Sessão expirando</h1>
+        <p>Seu tempo de sessão está prestes a expirar.</p>
+        <p>Tempo restante: {{ timeLeftDisplay }}</p>
+        <div class="button-container">
+            <button mat-button class="refresh-button" (click)="refreshSession()">Renovar Sessão</button>
+            <button mat-button class="logout-button" (click)="logout()">Sair</button>
+        </div>
+    </div>
+
+            <div *ngIf="sessionExpired">
+                <h1>Sessão expirada</h1>
+                <p>Sua sessão expirou. Por favor, faça login novamente.</p>
+                <button mat-button class="login-button" (click)="navigateToLogin()">Ir para Login</button>
+            </div>
+        </div>
+</div>
+
+

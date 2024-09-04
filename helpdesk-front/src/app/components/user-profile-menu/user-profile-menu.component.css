@@ -1,0 +1,22 @@
+/* Estilo para a toolbar */
+.toolbar {
+    position: fixed; /* Usa fixed para garantir que a toolbar fique no topo e à direita, mesmo ao rolar a página */
+    top: 0; /* Alinha ao topo da página */
+    right: 0; /* Alinha à direita da página */
+    width: auto; /* Ajusta a largura conforme o conteúdo */
+    background: rgba(0, 0, 0, 0); /* Torna o fundo transparente */
+    box-shadow: none; /* Remove a sombra se houver alguma */
+    z-index: 1000; /* Garante que a toolbar esteja sobre outros elementos */
+}
+
+
+/* Estiliza o botão com o avatar */
+.mat-icon-button {
+    margin-right: 16px; /* Adiciona um pouco de espaço à direita do botão com o avatar */
+}
+
+/* user-profile-menu.component.css */
+.avatar-icon {
+    color: gray; /* Define a cor do ícone como cinza */
+}
+
