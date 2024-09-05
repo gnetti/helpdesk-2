@@ -15,6 +15,7 @@ public class Observacao implements Serializable {
     private Integer id;
 
     private String dataObservacao;
+    @Column(length = 1024)
     private String observacao;
     private Integer chamadoStatus;
     private Integer tecnicoResponsavelId;

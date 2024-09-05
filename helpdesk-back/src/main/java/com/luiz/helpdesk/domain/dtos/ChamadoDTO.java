@@ -3,6 +3,7 @@ package com.luiz.helpdesk.domain.dtos;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.luiz.helpdesk.domain.Chamado;
 
+import javax.persistence.Column;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -31,6 +32,7 @@ public class ChamadoDTO implements Serializable {
     private String titulo;
 
     @NotNull(message = "O campo OBSERVAÇÕES é requerido")
+    @Column(length = 1024)
     private List<ObservacaoDTO> observacoes = new ArrayList<>();
 
     @NotNull(message = "O campo TECNICO é requerido")

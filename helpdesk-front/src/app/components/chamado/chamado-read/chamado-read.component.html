@@ -57,16 +57,19 @@
     </div>
 
     <div class="observacoes-container mat-elevation-z2">
-        <h1 class="observacoes-titulo">Observações</h1>
+        <mat-label class="observacoes-titulo mat-elevation-z1">Observações</mat-label>
         <div class="observacoes-list">
-            <div *ngFor="let observacao of chamado.observacoes" class="observacao-item">
-                <mat-form-field class="full-width" appearance="outline">
-                    <mat-label class="black-label">{{ observacao.tecnicoResponsavelNome }}:   {{ observacao.dataObservacao }}</mat-label>
-                    <textarea matInput [disabled]="true" [(ngModel)]="observacao.observacao"></textarea>
-                </mat-form-field>
-            </div>
+            <mat-card *ngFor="let observacao of chamado.observacoes" class="observacao-item mat-elevation-z2">
+                <mat-card-content>
+                    <mat-label class="label-tecnico"> {{ observacao.tecnicoResponsavelNome }}
+                        : {{ observacao.dataObservacao }}
+                    </mat-label>
+                    <p>{{ observacao.observacao }}</p>
+                </mat-card-content>
+            </mat-card>
         </div>
     </div>
+
 
     <button routerLink="../../" class="full-width mat-elevation-z4" mat-stroked-button color="warn">Retornar</button>
 

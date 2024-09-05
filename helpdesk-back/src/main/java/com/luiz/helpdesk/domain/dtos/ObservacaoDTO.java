@@ -2,10 +2,13 @@ package com.luiz.helpdesk.domain.dtos;
 
 import com.luiz.helpdesk.domain.Observacao;
 
+import javax.persistence.Column;
+
 public class ObservacaoDTO {
 
     private Integer id;
     private String dataObservacao;
+    @Column(length = 1024)
     private String observacao;
     private Integer chamadoStatus;
     private Integer tecnicoResponsavelId;
