@@ -20,6 +20,8 @@ public class PessoaDTO implements Serializable {
     private String senha;
     @ValidPassword
     private String senhaAtual;
+    @ValidPassword
+    private String senhaNova;
     private String tema;
     private Set<String> roles;
 
@@ -76,6 +78,14 @@ public class PessoaDTO implements Serializable {
 
     public void setSenhaAtual(String senhaAtual) {
         this.senhaAtual = senhaAtual;
+    }
+
+    public String getSenhaNova() {
+        return senhaNova;
+    }
+
+    public void setSenhaNova(String senhaNova) {
+        this.senhaNova = senhaNova;
     }
 
     public String getTema() {

@@ -6,7 +6,6 @@ import com.luiz.helpdesk.repositories.PessoaRepository;
 import com.luiz.helpdesk.security.UserSS;
 import com.luiz.helpdesk.services.exceptions.DataIntegrityViolationException;
 import com.luiz.helpdesk.services.exceptions.ForbiddenException;
-import com.luiz.helpdesk.services.exceptions.ObjectnotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,32 +35,23 @@ public class PessoaService {
         if (!authenticatedUser.getId().equals(id)) {
             throw new ForbiddenException("Acesso negado: Você só pode editar seus próprios dados.");
         }
-
         Pessoa oldObj = findById(id);
-        String decryptedCurrentPassword = decryptPassword(pessoaDTO.getSenhaAtual());
-
-        if (decryptedCurrentPassword != null && !encoder.matches(decryptedCurrentPassword, oldObj.getSenha())) {
-            throw new DataIntegrityViolationException("Senha atual incorreta.");
+        if (pessoaDTO.getSenhaAtual() != null && !pessoaDTO.getSenhaAtual().isEmpty()) {
+            String decryptedCurrentPassword = decryptPassword(pessoaDTO.getSenhaAtual());
+            if (!encoder.matches(decryptedCurrentPassword, oldObj.getSenha())) {
+                throw new DataIntegrityViolationException("Senha atual incorreta.");
+            }
         }
-
-        String newEncodedPassword = processNewPassword(pessoaDTO.getSenha());
-
-        if (newEncodedPassword != null && encoder.matches(decryptedCurrentPassword, newEncodedPassword)) {
-            throw new DataIntegrityViolationException("A nova senha não pode ser a mesma que a senha atual.");
-        }
-
-        pessoaDTO.setSenha(newEncodedPassword);
-        updateData(oldObj, pessoaDTO);
+        String newEncodedPassword = processNewPassword(pessoaDTO.getSenhaNova());
+        updateData(oldObj, pessoaDTO, newEncodedPassword);
         Pessoa updatedPessoa = pessoaRepository.save(oldObj);
-
         return new PessoaDTO(updatedPessoa);
     }
 
     private String decryptPassword(String encryptedPassword) {
-        if (encryptedPassword == null) {
+        if (encryptedPassword == null || encryptedPassword.isEmpty()) {
             return null;
         }
-
         try {
             return decryptionService.decrypt(encryptedPassword);
         } catch (Exception e) {
@@ -73,7 +63,6 @@ public class PessoaService {
         if (newPassword == null || newPassword.isEmpty()) {
             return null;
         }
-
         try {
             String decryptedNewPassword = decryptionService.decrypt(newPassword);
             return encoder.encode(decryptedNewPassword);
@@ -82,18 +71,18 @@ public class PessoaService {
         }
     }
 
-    private void updateData(Pessoa pessoa, PessoaDTO pessoaDTO) {
+    private void updateData(Pessoa pessoa, PessoaDTO pessoaDTO, String newEncodedPassword) {
         if (pessoaDTO.getTema() != null && !pessoaDTO.getTema().isEmpty()) {
             pessoa.setTema(pessoaDTO.getTema());
         }
-        if (pessoaDTO.getSenha() != null && !pessoaDTO.getSenha().isEmpty()) {
-            pessoa.setSenha(pessoaDTO.getSenha());
+        if (newEncodedPassword != null) {
+            pessoa.setSenha(newEncodedPassword);
         }
     }
 
     public Pessoa findById(Integer id) {
         return pessoaRepository.findById(id)
-                .orElseThrow(() -> new ObjectnotFoundException("Pessoa não encontrada! Id: " + id));
+                .orElseThrow(() -> new DataIntegrityViolationException("Pessoa não encontrada! Id: " + id));
     }
 
     public Integer getAuthenticatedUserId() {

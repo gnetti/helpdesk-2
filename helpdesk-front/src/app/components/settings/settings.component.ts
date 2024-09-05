@@ -91,7 +91,7 @@ export class SettingsComponent implements OnInit {
             );
         }
     }
-
+    
     getUpdatedSettings(): any {
         const formValue = this.settingsForm.getRawValue();
         const updatedSettings: any = {};
@@ -121,7 +121,7 @@ export class SettingsComponent implements OnInit {
                 return;
             }
             updatedSettings.senhaAtual = this.cryptoService.encrypt(formValue.senhaAtual);
-            updatedSettings.senha = this.cryptoService.encrypt(formValue.senhaNova);
+            updatedSettings.senhaNova = this.cryptoService.encrypt(formValue.senhaNova); // Enviar nova senha criptografada
             this.recolherCamposSenha();
         } else {
             this.toast.error('Preencha todos os campos de senha para atualizar.', 'Erro');
