@@ -1,5 +1,5 @@
-import {Component, OnInit, OnDestroy} from '@angular/core';
-import {MatDialogRef} from '@angular/material/dialog';
+import {Component, OnInit, OnDestroy, Inject} from '@angular/core';
+import {MatDialogRef, MAT_DIALOG_DATA} from '@angular/material/dialog';
 import {AuthService} from 'src/app/services/auth.service';
 import {Router} from '@angular/router';
 import {Subscription, timer} from 'rxjs';
@@ -10,24 +10,30 @@ import {Subscription, timer} from 'rxjs';
     styleUrls: ['./session-expiry-dialog.component.css']
 })
 export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
-    private countdownTimerSubscription: Subscription | undefined;
-    private readonly maxWaitTimeInMinutes = 15;
-    private timeLeft = this.maxWaitTimeInMinutes * 60;
+    private countdownTimerSubscription?: Subscription;
+    private displayTimerSubscription?: Subscription;
+    timeLeft: number;
     timeLeftDisplay: string = '';
     sessionExpired = false;
     private dialogOpened = false;
+    private readonly DIALOG_DISPLAY_TIME: number;
 
     constructor(
         private authService: AuthService,
         public dialogRef: MatDialogRef<SessionExpiryDialogComponent>,
-        private router: Router
+        private router: Router,
+        @Inject(MAT_DIALOG_DATA) public data: { timeLeft: number }
     ) {
+        this.DIALOG_DISPLAY_TIME = this.authService.getDialogDisplayTime();
+        const remainingTime = Math.floor(data.timeLeft / 1000) * 1000;
+        this.timeLeft = Math.floor(Math.min(this.DIALOG_DISPLAY_TIME, remainingTime) / 1000);
     }
 
     ngOnInit() {
         if (!this.dialogOpened) {
             this.dialogOpened = true;
             this.startCountdownTimer();
+            this.startDisplayTimer();
         }
     }
 
@@ -35,34 +41,28 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
         this.authService.refreshToken().subscribe(
             (authToken: string) => {
                 if (authToken) {
+                    localStorage.clear();
                     this.authService.successfulLogin(authToken);
-                    this.dialogRef.close();
-                    this.dialogOpened = false;
+                    this.closeDialog();
                 } else {
                     this.logout();
                 }
             },
-            (error) => {
-                this.logout();
-            }
+            () => this.logout()
         );
     }
 
     logout() {
         this.authService.logout();
-        this.dialogRef.close();
-        this.dialogOpened = false;
-        this.router.navigate(['/login']).then(() => {
-        }).catch(error => {
-        });
+        localStorage.clear();
+        this.closeDialog();
+        this.router.navigate(['/login']);
     }
 
     navigateToLogin() {
-        this.dialogRef.close();
-        this.dialogOpened = false;
-        this.router.navigate(['/login']).then(() => {
-        }).catch(error => {
-        });
+        localStorage.clear();
+        this.closeDialog();
+        this.router.navigate(['/login']);
     }
 
     private startCountdownTimer() {
@@ -70,13 +70,15 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
             if (this.timeLeft > 0) {
                 this.timeLeft--;
                 this.updateTimeDisplay();
-            } else {
-                if (!this.sessionExpired) {
-                    this.sessionExpired = true;
-                    localStorage.clear()
-                }
+            } else if (!this.sessionExpired) {
+                this.sessionExpired = true;
+                localStorage.clear();
             }
         });
+    }
+
+    private startDisplayTimer() {
+        this.displayTimerSubscription = timer(this.DIALOG_DISPLAY_TIME).subscribe();
     }
 
     private updateTimeDisplay() {
@@ -85,10 +87,14 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
         this.timeLeftDisplay = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
 
+    private closeDialog() {
+        this.dialogRef.close();
+        this.dialogOpened = false;
+    }
+
     ngOnDestroy() {
-        if (this.countdownTimerSubscription) {
-            this.countdownTimerSubscription.unsubscribe();
-        }
+        this.countdownTimerSubscription?.unsubscribe();
+        this.displayTimerSubscription?.unsubscribe();
         this.dialogOpened = false;
     }
 }

@@ -3,9 +3,9 @@ import {HttpClient, HttpHeaders, HttpResponse} from '@angular/common/http';
 import {JwtHelperService} from '@auth0/angular-jwt';
 import {API_CONFIG} from '../config/api.config';
 import {Credenciais} from '../models/credenciais';
-import {Observable, BehaviorSubject, Subscription, timer, interval} from 'rxjs';
-import {map} from 'rxjs/operators';
-import {MatDialog} from '@angular/material/dialog';
+import {Observable, BehaviorSubject, Subject, interval, timer, Subscription} from 'rxjs';
+import {takeUntil, tap, filter, map} from 'rxjs/operators';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {SessionExpiryDialogComponent} from '../components/session-expiry-dialog/session-expiry-dialog.component';
 import {Router} from '@angular/router';
 import {ThemeService} from './theme.service';
@@ -15,12 +15,22 @@ import {ThemeService} from './theme.service';
 })
 export class AuthService implements OnDestroy {
 
+    private readonly EXPIRATION_WARNING_TIME_MINUTES = 30;
+    private readonly DIALOG_DISPLAY_TIME_MINUTES = 0.15;
+    private readonly REFRESH_INTERVAL_MINUTES = 0.017;
+
+    private readonly EXPIRATION_WARNING_TIME = this.minutesToMilliseconds(this.EXPIRATION_WARNING_TIME_MINUTES);
+    private readonly DIALOG_DISPLAY_TIME = this.minutesToMilliseconds(this.DIALOG_DISPLAY_TIME_MINUTES);
+    private readonly REFRESH_INTERVAL = this.minutesToMilliseconds(this.REFRESH_INTERVAL_MINUTES);
+
     private jwtService: JwtHelperService = new JwtHelperService();
     private expirationWarning = new BehaviorSubject<boolean>(false);
-    private expirationCheckSubscription: Subscription | undefined;
+    private destroy$ = new Subject<void>();
     private sessionExpired = false;
-    private logoutTimer: Subscription | undefined;
+    private logoutTimer: Subscription;
     private isLogoutInitiated = false;
+    private hasShownExpiryDialog = false;
+    private sessionExpiryDialogRef: MatDialogRef<SessionExpiryDialogComponent> | undefined;
 
     constructor(
         private http: HttpClient,
@@ -32,14 +42,10 @@ export class AuthService implements OnDestroy {
     }
 
     authenticate(creds: Credenciais): Observable<HttpResponse<string>> {
-        const headers = new HttpHeaders({
-            'Content-Type': 'application/json'
-        });
-
         return this.http.post<string>(`${API_CONFIG.baseUrl}/login`, creds, {
             observe: 'response',
             responseType: 'text' as 'json',
-            headers: headers
+            headers: new HttpHeaders({'Content-Type': 'application/json'})
         });
     }
 
@@ -56,49 +62,27 @@ export class AuthService implements OnDestroy {
     isAuthenticated(): Observable<boolean> {
         const token = localStorage.getItem('token');
         return new Observable(subscriber => {
-            const isExpired = token ? this.jwtService.isTokenExpired(token) : true;
-            subscriber.next(!isExpired);
+            subscriber.next(token ? !this.jwtService.isTokenExpired(token) : false);
             subscriber.complete();
         });
     }
 
     logout(): void {
-        if (this.isLogoutInitiated) {
-            return;
-        }
+        if (this.isLogoutInitiated) return;
         this.isLogoutInitiated = true;
         localStorage.clear();
-        this.router.navigate(['/login']);
+        this.router.navigate(['/login']
+        );
     }
 
     getUserId(): number | null {
         const token = localStorage.getItem('token');
-        const decodedToken = token ? this.jwtService.decodeToken(token) : null;
-        return decodedToken?.id ?? null;
+        return token ? this.jwtService.decodeToken(token)?.id ?? null : null;
     }
 
     getUserName(): string | null {
         const token = localStorage.getItem('token');
-        const decodedToken = token ? this.jwtService.decodeToken(token) : null;
-        return decodedToken?.nome ?? null;
-    }
-
-    getUserEmail(): string | null {
-        const token = localStorage.getItem('token');
-        const decodedToken = token ? this.jwtService.decodeToken(token) : null;
-        return decodedToken?.sub ?? null;
-    }
-
-    getUserTheme(): string | null {
-        const token = localStorage.getItem('token');
-        const decodedToken = token ? this.jwtService.decodeToken(token) : null;
-        return decodedToken?.tema ?? null;
-    }
-
-    getUserRoles(): string[] | null {
-        const token = localStorage.getItem('token');
-        const decodedToken = token ? this.jwtService.decodeToken(token) : null;
-        return decodedToken?.roles ?? null;
+        return token ? this.jwtService.decodeToken(token)?.nome ?? null : null;
     }
 
     refreshToken(): Observable<string> {
@@ -106,13 +90,11 @@ export class AuthService implements OnDestroy {
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${refreshToken}`
         });
-
         if (!refreshToken) {
             return new Observable(subscriber => {
                 subscriber.error('Refresh token não encontrado.');
             });
         }
-
         return this.http.post<string>(`${API_CONFIG.baseUrl}/auth/refresh-token`, {}, {
             observe: 'response',
             responseType: 'text' as 'json',
@@ -139,7 +121,7 @@ export class AuthService implements OnDestroy {
     }
 
     private setThemeFromToken(decodedToken: any): void {
-        const theme = decodedToken?.tema || 'indigoPink'; // Substitua 'tema' pelo nome correto no token
+        const theme = decodedToken?.tema || 'indigoPink';
         this.themeService.setTheme(theme);
     }
 
@@ -150,67 +132,56 @@ export class AuthService implements OnDestroy {
             const expirationDate = new Date(Number(expirationTime) * 1000);
             const now = new Date();
             const timeLeft = expirationDate.getTime() - now.getTime();
-
             if (timeLeft <= 0) {
                 if (!this.sessionExpired) {
                     this.sessionExpired = true;
-                    this.startLogoutTimer(15 * 60 * 1000); // 15 minutos
+                    this.startLogoutTimer(this.DIALOG_DISPLAY_TIME);
                 }
-            } else if (timeLeft <= 60 * 1000) {
-                this.openSessionExpiryDialog();
-            } else {
+            } else if (timeLeft <= this.EXPIRATION_WARNING_TIME && !this.hasShownExpiryDialog) {
+                this.openSessionExpiryDialog(timeLeft);
+                this.hasShownExpiryDialog = true;
+            } else if (timeLeft > this.EXPIRATION_WARNING_TIME) {
                 this.expirationWarning.next(false);
+                this.hasShownExpiryDialog = false;
             }
         }
     }
 
-    private openSessionExpiryDialog(): void {
-        const dialogRef = this.dialog.open(SessionExpiryDialogComponent, {
+    private openSessionExpiryDialog(timeLeft: number): void {
+        this.sessionExpiryDialogRef = this.dialog.open(SessionExpiryDialogComponent, {
             disableClose: true,
-            width: '400px'
+            width: '400px',
+            data: {timeLeft}
         });
+    }
 
-        dialogRef.afterClosed().subscribe(result => {
-            if (result === 'refresh') {
-                this.refreshToken().subscribe(
-                    () => {
-                        this.expirationWarning.next(false);
-                        this.stopLogoutTimer();
-                        this.checkTokenExpiration();
-                    },
-                    (error) => {
-                        this.logout();
-                    }
-                );
-            } else {
-                this.logout();
-            }
-        });
+    getDialogDisplayTime(): number {
+        return this.DIALOG_DISPLAY_TIME;
     }
 
     private startLogoutTimer(duration: number): void {
-        this.logoutTimer = timer(duration).subscribe(() => {
-            this.logout();
-        });
+        this.logoutTimer = timer(duration).subscribe(() => this.logout());
     }
 
     private stopLogoutTimer(): void {
-        if (this.logoutTimer) {
-            this.logoutTimer.unsubscribe();
-        }
+        this.logoutTimer?.unsubscribe();
     }
 
     private startExpirationCheck(): void {
-        this.expirationCheckSubscription = interval(60000).subscribe(() => {
-            this.checkTokenExpiration();
-        });
+        interval(this.REFRESH_INTERVAL).pipe(
+            takeUntil(this.destroy$),
+            filter(() => !!localStorage.getItem('token_expiration')),
+            tap(() => {
+                this.checkTokenExpiration();
+            })
+        ).subscribe();
     }
 
     ngOnDestroy(): void {
-        if (this.expirationCheckSubscription) {
-            this.expirationCheckSubscription.unsubscribe();
-        }
+        this.destroy$.next();
+        this.destroy$.complete();
         this.stopLogoutTimer();
+        this.sessionExpiryDialogRef?.close();
     }
 
     login(credentials: any): void {
@@ -222,7 +193,7 @@ export class AuthService implements OnDestroy {
         });
     }
 
-    private getTokenFromLoginResponse(): string {
-        return '';
+    private minutesToMilliseconds(minutes: number): number {
+        return minutes * 60 * 1000;
     }
 }

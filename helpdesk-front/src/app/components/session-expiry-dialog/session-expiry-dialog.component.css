@@ -19,7 +19,6 @@
 .session-expiry-card {
     border-radius: 8px;
     padding: 20px;
-    background-color: rgb(235, 235, 235);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
     width: 300px;
     height: auto;
@@ -41,7 +40,6 @@
     left: 10px;
     right: 10px;
     bottom: 10px;
-    background: rgba(0, 0, 0, 0.1);
     z-index: -1;
     border-radius: 8px;
     outline: none;
@@ -61,8 +59,6 @@
 .refresh-button,
 .logout-button,
 .login-button {
-    background-color: white !important;
-    color: black;
     border: 1px solid #ccc;
     box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
     transition: background-color 0.3s, box-shadow 0.3s;
@@ -76,7 +72,6 @@
 .refresh-button:hover,
 .logout-button:hover,
 .login-button:hover {
-    background-color: #f5f5f5;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -91,6 +86,5 @@
 .refresh-button:active,
 .logout-button:active,
 .login-button:active {
-    background-color: #e0e0e0;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
