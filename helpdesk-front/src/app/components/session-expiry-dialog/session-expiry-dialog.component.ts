@@ -16,7 +16,7 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
     timeLeftDisplay: string = '';
     sessionExpired = false;
     private dialogOpened = false;
-    private readonly DIALOG_DISPLAY_TIME: number;
+    private readonly TEMPO_EXIBICAO_DIALOGO_MINUTOS: number;
 
     constructor(
         private authService: AuthService,
@@ -24,9 +24,9 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
         private router: Router,
         @Inject(MAT_DIALOG_DATA) public data: { timeLeft: number }
     ) {
-        this.DIALOG_DISPLAY_TIME = this.authService.getDialogDisplayTime();
+        this.TEMPO_EXIBICAO_DIALOGO_MINUTOS = this.authService.getDialogDisplayTime();
         const remainingTime = Math.floor(data.timeLeft / 1000) * 1000;
-        this.timeLeft = Math.floor(Math.min(this.DIALOG_DISPLAY_TIME, remainingTime) / 1000);
+        this.timeLeft = Math.floor(Math.min(this.TEMPO_EXIBICAO_DIALOGO_MINUTOS, remainingTime) / 1000);
     }
 
     ngOnInit() {
@@ -78,7 +78,7 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
     }
 
     private startDisplayTimer() {
-        this.displayTimerSubscription = timer(this.DIALOG_DISPLAY_TIME).subscribe();
+        this.displayTimerSubscription = timer(this.TEMPO_EXIBICAO_DIALOGO_MINUTOS).subscribe();
     }
 
     private updateTimeDisplay() {
