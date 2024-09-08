@@ -1,5 +1,6 @@
 package com.luiz.helpdesk.domain.dtos;
 
+import com.luiz.helpdesk.domain.TokenTempo;
 import com.luiz.helpdesk.domain.enums.Perfil;
 
 import java.io.Serializable;
@@ -16,9 +17,11 @@ public class TokenTempoDTO implements Serializable {
     private BigDecimal jwtExpiracao;
     private Perfil perfil;
 
+    // Construtor padrão
     public TokenTempoDTO() {
     }
 
+    // Construtor com parâmetros
     public TokenTempoDTO(Integer id, BigDecimal tempoAvisoExpiracaoMinutos, BigDecimal tempoExibicaoDialogoMinutos, BigDecimal intervaloAtualizacaoMinutos, BigDecimal jwtExpiracao, Perfil perfil) {
         this.id = id;
         this.tempoAvisoExpiracaoMinutos = tempoAvisoExpiracaoMinutos;
@@ -28,6 +31,17 @@ public class TokenTempoDTO implements Serializable {
         this.perfil = perfil;
     }
 
+    // Construtor que aceita um TokenTempo
+    public TokenTempoDTO(TokenTempo tokenTempo) {
+        this.id = tokenTempo.getId();
+        this.tempoAvisoExpiracaoMinutos = tokenTempo.getTempoAvisoExpiracaoMinutos();
+        this.tempoExibicaoDialogoMinutos = tokenTempo.getTempoExibicaoDialogoMinutos();
+        this.intervaloAtualizacaoMinutos = tokenTempo.getIntervaloAtualizacaoMinutos();
+        this.jwtExpiracao = tokenTempo.getJwtExpiracao();
+        this.perfil = tokenTempo.getPerfil();
+    }
+
+    // Getters e setters
     public Integer getId() {
         return id;
     }

@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface TokenTempoRepository extends JpaRepository<TokenTempo, Integer> {
     Optional<TokenTempo> findByPerfil(Perfil perfil);
+
 }

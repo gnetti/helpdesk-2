@@ -4,14 +4,12 @@ import com.luiz.helpdesk.domain.*;
 import com.luiz.helpdesk.domain.enums.Perfil;
 import com.luiz.helpdesk.domain.enums.Prioridade;
 import com.luiz.helpdesk.domain.enums.Status;
-import com.luiz.helpdesk.repositories.ChamadoRepository;
-import com.luiz.helpdesk.repositories.ClienteRepository;
-import com.luiz.helpdesk.repositories.ObservacaoRepository;
-import com.luiz.helpdesk.repositories.TecnicoRepository;
+import com.luiz.helpdesk.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 
@@ -23,17 +21,20 @@ public class DBService {
     private final ClienteRepository clienteRepository;
     private final ObservacaoRepository observacaoRepository;
     private final BCryptPasswordEncoder encoder;
+    private final TokenTempoRepository tokenTempoRepository;
 
     @Autowired
     public DBService(ChamadoRepository chamadoRepository,
                      TecnicoRepository tecnicoRepository,
                      ClienteRepository clienteRepository,
                      ObservacaoRepository observacaoRepository,
+                     TokenTempoRepository tokenTempoRepository,
                      BCryptPasswordEncoder encoder) {
         this.chamadoRepository = chamadoRepository;
         this.tecnicoRepository = tecnicoRepository;
         this.clienteRepository = clienteRepository;
         this.observacaoRepository = observacaoRepository;
+        this.tokenTempoRepository = tokenTempoRepository;
         this.encoder = encoder;
     }
 
@@ -120,5 +121,13 @@ public class DBService {
                 new Observacao("15/07/2024 14:00:00", "Observação 2 para Chamado 3", chamados.get(2), Status.ENCERRADO.getCodigo(), tecnico2.getId(), tecnico2.getNome())
         );
         observacaoRepository.saveAll(observacoes);
+
+        List<TokenTempo> TokenTempos = Arrays.asList(
+                new TokenTempo(null, new BigDecimal("30"), new BigDecimal("5"), new BigDecimal("1"), new BigDecimal("1420"), Perfil.ADMIN),
+                new TokenTempo(null, new BigDecimal("40"), new BigDecimal("10"), new BigDecimal("2"), new BigDecimal("1430"), Perfil.CLIENTE),
+                new TokenTempo(null, new BigDecimal("50"), new BigDecimal("15"), new BigDecimal("3"), new BigDecimal("1440"), Perfil.TECNICO)
+        );
+
+        tokenTempoRepository.saveAll(TokenTempos);
     }
 }

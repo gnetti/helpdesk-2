@@ -18,10 +18,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class TokenTimeService {
+public class TokenTempoService {
 
     @Autowired
-    private TokenTempoRepository tokenTimeRepository;
+    private TokenTempoRepository tokenTempoRepository;
 
     @Autowired
     private AuthService authService;
@@ -36,12 +36,12 @@ public class TokenTimeService {
     @Transactional
     public TokenTempoDTO create(TokenTempoDTO objDTO) {
         checkAuthorization();
-        Optional<TokenTempo> existingTokenTempo = tokenTimeRepository.findByPerfil(objDTO.getPerfil());
+        Optional<TokenTempo> existingTokenTempo = tokenTempoRepository.findByPerfil(objDTO.getPerfil());
         if (existingTokenTempo.isPresent()) {
             throw new DataIntegrityViolationException("Já existe um registro para o perfil " + objDTO.getPerfil() + ".");
         }
         objDTO.setId(null);
-        TokenTempo tokenTime = new TokenTempo(
+        TokenTempo tokenTempo = new TokenTempo(
                 objDTO.getId(),
                 objDTO.getTempoAvisoExpiracaoMinutos(),
                 objDTO.getTempoExibicaoDialogoMinutos(),
@@ -49,38 +49,38 @@ public class TokenTimeService {
                 objDTO.getJwtExpiracao(),
                 objDTO.getPerfil()
         );
-        tokenTime = tokenTimeRepository.save(tokenTime);
-        return toDTO(tokenTime);
+        tokenTempo = tokenTempoRepository.save(tokenTempo);
+        return toDTO(tokenTempo);
     }
 
     @Transactional
     public TokenTempoDTO update(Integer id, @Valid TokenTempoDTO objDTO) {
         checkAuthorization();
-        TokenTempo oldObj = tokenTimeRepository.findById(id)
+        TokenTempo oldObj = tokenTempoRepository.findById(id)
                 .orElseThrow(() -> new ObjectnotFoundException("Objeto não encontrado! Id: " + id));
         oldObj.setTempoAvisoExpiracaoMinutos(objDTO.getTempoAvisoExpiracaoMinutos());
         oldObj.setTempoExibicaoDialogoMinutos(objDTO.getTempoExibicaoDialogoMinutos());
         oldObj.setIntervaloAtualizacaoMinutos(objDTO.getIntervaloAtualizacaoMinutos());
         oldObj.setJwtExpiracao(objDTO.getJwtExpiracao());
-        oldObj = tokenTimeRepository.save(oldObj);
+        oldObj = tokenTempoRepository.save(oldObj);
         return toDTO(oldObj);
     }
 
-    public TokenTempoDTO findDTOById(Integer id) {
+    public TokenTempoDTO findByPerfil(Perfil perfil) {
         checkAuthorization();
-        TokenTempo tokenTime = tokenTimeRepository.findById(id)
-                .orElseThrow(() -> new ObjectnotFoundException("Objeto não encontrado! Id: " + id));
-        return toDTO(tokenTime);
+        TokenTempo tokenTempo = tokenTempoRepository.findByPerfil(perfil)
+                .orElseThrow(() -> new RuntimeException("TokenTempo não encontrado para o perfil: " + perfil));
+        return new TokenTempoDTO(tokenTempo);
     }
 
     public boolean existsByPerfil(String perfil) {
-        return tokenTimeRepository.findByPerfil(Perfil.valueOf(perfil)).isPresent();
+        return tokenTempoRepository.findByPerfil(Perfil.valueOf(perfil)).isPresent();
     }
 
     public List<TokenTempoDTO> findAll() {
         checkAuthorization();
-        List<TokenTempo> tokenTimes = tokenTimeRepository.findAll();
-        return tokenTimes.stream()
+        List<TokenTempo> tokenTempos = tokenTempoRepository.findAll();
+        return tokenTempos.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
     }

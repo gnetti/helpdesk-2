@@ -25,6 +25,7 @@ export class SettingsComponent implements OnInit {
     originalPassword: string;
     showPassword = {senhaAtual: false, senhaNova: false, confirmaSenhaNova: false};
     passwordErrors: any = {};
+    isPasswordFieldsRevealed = false;
 
     constructor(
         private fb: FormBuilder,
@@ -91,7 +92,7 @@ export class SettingsComponent implements OnInit {
             );
         }
     }
-    
+
     getUpdatedSettings(): any {
         const formValue = this.settingsForm.getRawValue();
         const updatedSettings: any = {};
@@ -129,6 +130,7 @@ export class SettingsComponent implements OnInit {
     }
 
     onUpdateSuccess(updatedSettings: any): void {
+        this.isPasswordFieldsRevealed = false;
         this.themeService.getCurrentTheme();
         this.originalTema = updatedSettings.tema || Theme.INDIGO_PINK;
         this.toast.success('Configurações atualizadas com sucesso!', 'Sucesso');
@@ -138,6 +140,7 @@ export class SettingsComponent implements OnInit {
     }
 
     onUpdateError(error: any): void {
+        this.isPasswordFieldsRevealed = false;
         this.showPassword.senhaAtual = false;
         this.isSaveEnabled = false;
         const errorMessage = error.error?.message || 'Erro desconhecido ao atualizar as configurações.';
@@ -168,11 +171,14 @@ export class SettingsComponent implements OnInit {
     }
 
     revealPasswordFields(): void {
-        this.showPasswordFields = true;
-        this.showCancelButton = true;
-        this.clearPasswordFields();
-        this.setValidatorsForPasswords([Validators.required, PasswordValidator.validatePassword]);
-        this.updateSaveButtonState();
+        if (!this.isPasswordFieldsRevealed) {
+            this.showPasswordFields = true;
+            this.showCancelButton = true;
+            this.clearPasswordFields();
+            this.setValidatorsForPasswords([Validators.required, PasswordValidator.validatePassword]);
+            this.updateSaveButtonState();
+            this.isPasswordFieldsRevealed = true;
+        }
     }
 
     clearPasswordFields(): void {
