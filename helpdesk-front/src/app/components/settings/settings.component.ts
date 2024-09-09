@@ -162,7 +162,8 @@ export class SettingsComponent implements OnInit {
                 if (error === null || (typeof error === 'function' && error() === null)) {
                     this.initializeAdminSettingsWithDefaults();
                     this.showToastForNewProfile(perfil);
-                } else {
+                }
+                if (this.authService.isUserIdOne()) {
                     this.toast.warning('Erro ao carregar configurações de admin.', 'Erro');
                 }
             }

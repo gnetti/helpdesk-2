@@ -15,13 +15,13 @@ import {ThemeService} from './theme.service';
 })
 export class AuthService implements OnDestroy {
 
-    private readonly TEMPO_AVISO_EXPIRACAO_MINUTOS = 30;
-    private readonly TEMPO_EXIBICAO_DIALOGO_MINUTOS = 0.15;
-    private readonly INTERVALO_ATUALIZACAO_MINUTOS = 1;
+    private readonly TEMPO_TOKEN_EXIBE_DIALOGO_MINUTOS = 30;
+    private readonly TEMPO_EXIBICAO_DIALOGO_ATUALIZA_TOKEN_MINUTOS = 0.15;
+    private readonly INTERVALO_ATUALIZACAO_TOKEN_MINUTOS = 1;
 
-    private readonly EXPIRATION_WARNING_TIME = this.minutesToMilliseconds(this.TEMPO_AVISO_EXPIRACAO_MINUTOS);
-    private readonly DIALOG_DISPLAY_TIME = this.minutesToMilliseconds(this.TEMPO_EXIBICAO_DIALOGO_MINUTOS);
-    private readonly REFRESH_INTERVAL = this.minutesToMilliseconds(this.INTERVALO_ATUALIZACAO_MINUTOS);
+    private readonly EXPIRATION_WARNING_TIME = this.minutesToMilliseconds(this.TEMPO_TOKEN_EXIBE_DIALOGO_MINUTOS);
+    private readonly DIALOG_DISPLAY_TIME = this.minutesToMilliseconds(this.TEMPO_EXIBICAO_DIALOGO_ATUALIZA_TOKEN_MINUTOS);
+    private readonly REFRESH_INTERVAL = this.minutesToMilliseconds(this.INTERVALO_ATUALIZACAO_TOKEN_MINUTOS);
 
     private jwtService: JwtHelperService = new JwtHelperService();
     private expirationWarning = new BehaviorSubject<boolean>(false);
