@@ -7,8 +7,8 @@ export class TempoAvisoExpiracaoValidator {
         if (jwtExpiracao == null) {
             return {'jwtExpiracaoRequired': 'O campo Expiração JWT é obrigatório.'};
         }
-        if (jwtExpiracao < 30) {
-            return {'jwtExpiracaoMin': 'O valor deve ser pelo menos 30.'};
+        if (jwtExpiracao < 60) {
+            return {'jwtExpiracaoMin': 'O valor deve ser pelo menos 60.'};
         }
         if (jwtExpiracao > 1440) {
             return {'jwtExpiracaoMax': 'O valor não pode ser maior que 1440.'};

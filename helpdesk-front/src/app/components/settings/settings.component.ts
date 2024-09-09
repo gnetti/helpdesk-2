@@ -1,6 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {FormBuilder, FormGroup, Validators, FormArray, AbstractControl} from '@angular/forms';
-import {Router} from '@angular/router';
+import {AbstractControl, FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {ThemeService} from '../../services/theme.service';
 import {UserSettings} from '../../models/userSettings';
 import {SettingsService} from '../../services/settingsService';
@@ -9,6 +8,11 @@ import {ToastrService} from "ngx-toastr";
 import {PasswordValidator} from "../../config/validator/passwordValidator";
 import {CryptoService} from "../../services/cryptoService";
 import {Theme} from "../enum/tema";
+import {AuthService} from "../../services/auth.service";
+import {getUserRoles, UserRole} from "../enum/userRole";
+import {TokenTempoService} from "../../services/tokenTempo.service";
+import {TokenTempo} from "../../models/TokenTempo";
+import {TempoAvisoExpiracaoValidator} from "../../config/validator/validateTempoAvisoExpiracao";
 
 @Component({
     selector: 'app-settings',
@@ -17,6 +21,7 @@ import {Theme} from "../enum/tema";
 })
 export class SettingsComponent implements OnInit {
     settingsForm: FormGroup;
+    adminSettingsForm: FormGroup;
     showPasswordFields = false;
     showCancelButton = false;
     availableThemes = Object.values(Theme);
@@ -26,31 +31,150 @@ export class SettingsComponent implements OnInit {
     showPassword = {senhaAtual: false, senhaNova: false, confirmaSenhaNova: false};
     passwordErrors: any = {};
     isPasswordFieldsRevealed = false;
+    showTokenFields = false;
+    perfis: { value: UserRole; label: string }[] = [];
+    selectedRole: UserRole = UserRole.ADMIN;
+    UserRole = UserRole;
+    adminSettingsId: number | null = null;
+    originalAdminSettings: any = {};
+    hasClickedSenhaAtual = false;
 
     constructor(
         private fb: FormBuilder,
         private settingsService: SettingsService,
         private themeService: ThemeService,
-        private router: Router,
         private toast: ToastrService,
-        private cryptoService: CryptoService
+        private cryptoService: CryptoService,
+        private authService: AuthService,
+        private tokenTempoService: TokenTempoService,
     ) {
-        this.settingsForm = this.fb.group({
-            id: [{value: '', disabled: true}, Validators.required],
-            nome: ['', Validators.required],
-            email: ['', [Validators.required, Validators.email]],
-            senhaAtual: ['', Validators.required],
-            senhaNova: ['', [PasswordValidator.validatePassword]],
-            confirmaSenhaNova: ['', [PasswordValidator.validatePassword]],
-            tema: [Theme.INDIGO_PINK, Validators.required],
-            roles: this.fb.array([])
-        }, {validators: this.passwordsMatchValidator});
+        this.initForms();
     }
 
     ngOnInit(): void {
         this.loadUserSettings();
         this.settingsForm.get('senhaNova')?.valueChanges.subscribe(() => this.validatePassword('senhaNova'));
         this.settingsForm.get('confirmaSenhaNova')?.valueChanges.subscribe(() => this.validatePassword('confirmaSenhaNova'));
+        this.checkIfUserIsAdmin();
+        this.initPerfis();
+        this.setupAdminFormListener();
+        this.loadInitialAdminSettings();
+        this.setupFormChangeListeners();
+    }
+
+    private initForms(): void {
+        this.settingsForm = this.fb.group({
+            id: [{value: '', disabled: true}, Validators.required],
+            nome: ['', Validators.required],
+            email: ['', [Validators.required, Validators.email]],
+            senhaAtual: [''],
+            senhaNova: ['', [PasswordValidator.validatePassword]],
+            confirmaSenhaNova: ['', [PasswordValidator.validatePassword]],
+            tema: [Theme.INDIGO_PINK, Validators.required],
+            roles: this.fb.array([]),
+        }, {validators: this.passwordsMatchValidator});
+
+        this.adminSettingsForm = this.fb.group({
+            perfil: [this.UserRole.ADMIN, Validators.required],
+            jwtExpiracao: ['', [TempoAvisoExpiracaoValidator.validateJwtExpiracao]],
+            tempoAvisoExpiracaoMinutos: ['', [TempoAvisoExpiracaoValidator.validateTempoAvisoExpiracaoMinutos]],
+            tempoExibicaoDialogoMinutos: ['', [Validators.required, Validators.min(2), Validators.max(15)]],
+            intervaloAtualizacaoMinutos: ['', [Validators.required, Validators.min(0.5), Validators.max(5)]]
+        }, {
+            validators: TempoAvisoExpiracaoValidator.validateTempoAvisoExpiracao()
+        });
+    }
+
+    private setupFormChangeListeners(): void {
+        this.settingsForm.valueChanges.subscribe(() => {
+            this.updateSaveButtonState();
+        });
+
+        this.adminSettingsForm.valueChanges.subscribe(() => {
+            this.updateSaveButtonState();
+        });
+    }
+
+    private initPerfis(): void {
+        this.perfis = getUserRoles().map(role => ({
+            value: UserRole[role as keyof typeof UserRole],
+            label: role
+        }));
+    }
+
+    private setupAdminFormListener(): void {
+        this.adminSettingsForm.get('perfil')?.valueChanges.subscribe((value) => {
+            if (value) {
+                this.selectedRole = value;
+                this.loadAdminSettings(this.selectedRole);
+            } else {
+                this.selectedRole = UserRole.ADMIN;
+                this.loadAdminSettings(this.selectedRole);
+            }
+        });
+    }
+
+    private loadInitialAdminSettings(): void {
+        const initialRole = this.adminSettingsForm.get('perfil')?.value || UserRole.ADMIN;
+        this.selectedRole = initialRole;
+        this.loadAdminSettings(this.selectedRole);
+    }
+
+    checkIfUserIsAdmin(): void {
+        if (this.authService.isUserIdOne()) {
+            this.showTokenFields = true;
+        }
+    }
+
+    onPerfilChange(value: string): void {
+        if (Object.values(UserRole).includes(value as unknown as UserRole)) {
+            this.selectedRole = value as unknown as UserRole;
+            this.loadAdminSettings(this.selectedRole);
+        } else {
+            // Handle invalid role
+        }
+    }
+
+    loadAdminSettings(perfil: UserRole): void {
+        this.tokenTempoService.findByPerfil(UserRole[perfil]).subscribe(
+            (settings: TokenTempo) => {
+                this.adminSettingsId = settings.id;
+                this.patchFormWithAdminSettings(settings);
+                this.showTokenFields = true;
+                this.originalAdminSettings = {...settings};
+                this.adminSettingsForm.markAsPristine();
+                this.updateSaveButtonState();
+            },
+            (error) => {
+                if (error.status === 404) {
+                    this.adminSettingsId = null;
+                    this.initializeAdminSettingsWithDefaults();
+                    this.showTokenFields = true;
+                } else {
+                    this.toast.warning('Erro ao carregar configurações de admin.', 'Fechar');
+                }
+            }
+        );
+    }
+
+    private initializeAdminSettingsWithDefaults(): void {
+        const defaultSettings = {
+            jwtExpiracao: 60,
+            tempoAvisoExpiracaoMinutos: 5,
+            tempoExibicaoDialogoMinutos: 2,
+            intervaloAtualizacaoMinutos: 1
+        };
+        this.adminSettingsForm.patchValue(defaultSettings);
+        this.originalAdminSettings = {...defaultSettings};
+    }
+
+    patchFormWithAdminSettings(settings: TokenTempo): void {
+        this.adminSettingsForm.patchValue({
+            jwtExpiracao: settings.jwtExpiracao,
+            tempoAvisoExpiracaoMinutos: settings.tempoAvisoExpiracaoMinutos,
+            tempoExibicaoDialogoMinutos: settings.tempoExibicaoDialogoMinutos,
+            intervaloAtualizacaoMinutos: settings.intervaloAtualizacaoMinutos
+        });
     }
 
     loadUserSettings(): void {
@@ -77,20 +201,98 @@ export class SettingsComponent implements OnInit {
         this.setRoles(settings.roles);
     }
 
-    updateSettings(): void {
-        if (this.settingsForm.valid) {
-            const updatedSettings = this.getUpdatedSettings();
-            if (!Object.keys(updatedSettings).length) {
-                this.toast.info('Nenhuma alteração detectada.', 'Info');
-                return;
-            }
-            this.settingsService.updateUserSettings(updatedSettings).subscribe(
-                () => {
-                    this.onUpdateSuccess(updatedSettings);
-                },
-                (error) => this.onUpdateError(error)
-            );
+    setRoles(roles: string[]): void {
+        const rolesFormArray = this.settingsForm.get('roles') as FormArray;
+        rolesFormArray.clear();
+        roles.forEach(role => rolesFormArray.push(this.fb.control(role)));
+    }
+
+    isAnySaveEnabled(): boolean {
+        return this.settingsForm.dirty || this.adminSettingsForm.dirty;
+    }
+
+    saveAllSettings(): void {
+        const userSettingsChanged = this.settingsForm.dirty;
+        const adminSettingsChanged = this.adminSettingsForm.dirty;
+
+        if (!userSettingsChanged && !adminSettingsChanged) {
+            this.toast.info('Nenhuma alteração detectada.', 'Info');
+            return;
         }
+
+        let userSettingsPromise = Promise.resolve();
+        let adminSettingsPromise = Promise.resolve();
+
+        if (userSettingsChanged) {
+            userSettingsPromise = this.updateSettingsAsync();
+        }
+
+        if (adminSettingsChanged) {
+            adminSettingsPromise = this.updateAdminSettingsAsync();
+        }
+
+        Promise.all([userSettingsPromise, adminSettingsPromise])
+            .then(() => {
+                this.toast.success('Todas as configurações foram atualizadas com sucesso!', 'Sucesso');
+            })
+            .catch((error) => {
+                this.toast.error('Ocorreu um erro ao atualizar algumas configurações.', 'Erro');
+            });
+    }
+
+    private updateSettingsAsync(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (this.settingsForm.valid) {
+                const updatedSettings = this.getUpdatedSettings();
+                if (Object.keys(updatedSettings).length) {
+                    this.settingsService.updateUserSettings(updatedSettings).subscribe(
+                        (response: any) => {
+                            this.onUpdateSuccess(response);
+                            resolve();
+                        },
+                        (error) => {
+                            this.onUpdateError(error);
+                            reject(error);
+                        }
+                    );
+                } else {
+                    resolve();
+                }
+            } else {
+                reject(new Error('Formulário de configurações de usuário inválido.'));
+            }
+        });
+    }
+
+    private updateAdminSettingsAsync(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (this.adminSettingsForm.valid) {
+                const updatedAdminSettings = this.adminSettingsForm.getRawValue();
+                delete updatedAdminSettings.perfil;
+
+                const tokenTempo: TokenTempo = {
+                    id: this.adminSettingsId,
+                    perfil: UserRole[this.selectedRole],
+                    ...updatedAdminSettings
+                };
+
+                const operation = this.adminSettingsId
+                    ? this.tokenTempoService.update(this.adminSettingsId, tokenTempo)
+                    : this.tokenTempoService.create(tokenTempo);
+
+                operation.subscribe({
+                    next: () => {
+                        this.loadAdminSettings(this.selectedRole);
+                        resolve();
+                    },
+                    error: (error) => {
+                        reject(error);
+                    }
+                });
+            } else {
+                reject(new Error('Formulário de configurações de administrador inválido.'));
+            }
+        });
     }
 
     getUpdatedSettings(): any {
@@ -122,7 +324,7 @@ export class SettingsComponent implements OnInit {
                 return;
             }
             updatedSettings.senhaAtual = this.cryptoService.encrypt(formValue.senhaAtual);
-            updatedSettings.senhaNova = this.cryptoService.encrypt(formValue.senhaNova); // Enviar nova senha criptografada
+            updatedSettings.senhaNova = this.cryptoService.encrypt(formValue.senhaNova);
             this.recolherCamposSenha();
         } else {
             this.toast.error('Preencha todos os campos de senha para atualizar.', 'Erro');
@@ -133,32 +335,68 @@ export class SettingsComponent implements OnInit {
         this.isPasswordFieldsRevealed = false;
         this.themeService.getCurrentTheme();
         this.originalTema = updatedSettings.tema || Theme.INDIGO_PINK;
-        this.toast.success('Configurações atualizadas com sucesso!', 'Sucesso');
-        this.isSaveEnabled = false;
-        this.router.navigate(['/settings']);
-        this.showPassword.senhaAtual = false;
+
+        if (updatedSettings.senha) {
+            this.originalPassword = updatedSettings.senha;
+            this.settingsForm.patchValue({
+                senhaAtual: updatedSettings.senha
+            });
+        }
+
+        this.setRoles(updatedSettings.roles);
+
+        this.settingsForm.get('senhaAtual')?.clearValidators();
+        this.settingsForm.get('senhaAtual')?.updateValueAndValidity();
+        this.hideAllPasswords();
+        this.recolherCamposSenha();
+        this.settingsForm.markAsPristine();
+        this.updateSaveButtonState();
+        this.hasClickedSenhaAtual = false;
+        this.settingsForm.patchValue({
+            nome: updatedSettings.nome,
+            email: updatedSettings.email,
+            tema: updatedSettings.tema,
+            senhaAtual: updatedSettings.senha
+        });
     }
 
     onUpdateError(error: any): void {
         this.isPasswordFieldsRevealed = false;
-        this.showPassword.senhaAtual = false;
-        this.isSaveEnabled = false;
-        const errorMessage = error.error?.message || 'Erro desconhecido ao atualizar as configurações.';
+        this.hideAllPasswords();
+        let errorMessage = error.error?.message || 'Erro desconhecido ao atualizar as configurações.';
+
+        if (error.error instanceof ErrorEvent) {
+            errorMessage = `Erro: ${error.error.message}`;
+        } else if (error.status === 403) {
+            errorMessage = 'Acesso negado: Apenas o Administrador pode acessar este recurso.';
+        } else if (error.status === 404) {
+            errorMessage = 'Objeto não encontrado.';
+        } else if (error.status === 409) {
+            errorMessage = 'Já existe um registro para o perfil selecionado.';
+        }
+
         this.toast.error(errorMessage, 'Erro');
-        console.error('Erro ao atualizar as configurações', error);
+        this.handlePasswordUpdateError();
+        this.isSaveEnabled = false;
+    }
+
+    handlePasswordUpdateError(): void {
+        this.settingsForm.patchValue({
+            senhaAtual: this.originalPassword,
+            senhaNova: '',
+            confirmaSenhaNova: ''
+        });
+        this.settingsForm.get('senhaAtual')?.clearValidators();
+        this.settingsForm.get('senhaAtual')?.updateValueAndValidity();
+        this.settingsForm.markAsPristine();
+        this.updateSaveButtonState();
+        this.hasClickedSenhaAtual = false;
     }
 
     onThemeChange(event: MatSelectChange): void {
         const newTheme = event.value;
         this.settingsForm.get('tema')?.setValue(newTheme);
         this.themeService.setTheme(newTheme);
-        this.updateSaveButtonState();
-    }
-
-    setRoles(roles: string[]): void {
-        const rolesFormArray = this.settingsForm.get('roles') as FormArray;
-        rolesFormArray.clear();
-        roles.forEach(role => rolesFormArray.push(this.fb.control(role)));
         this.updateSaveButtonState();
     }
 
@@ -171,18 +409,10 @@ export class SettingsComponent implements OnInit {
     }
 
     revealPasswordFields(): void {
-        if (!this.isPasswordFieldsRevealed) {
-            this.showPasswordFields = true;
-            this.showCancelButton = true;
-            this.clearPasswordFields();
-            this.setValidatorsForPasswords([Validators.required, PasswordValidator.validatePassword]);
-            this.updateSaveButtonState();
-            this.isPasswordFieldsRevealed = true;
-        }
-    }
-
-    clearPasswordFields(): void {
-        ['senhaAtual', 'senhaNova', 'confirmaSenhaNova'].forEach(field => this.settingsForm.get(field)?.setValue(''));
+        this.showPasswordFields = true;
+        this.showCancelButton = true;
+        this.setValidatorsForPasswords([Validators.required, PasswordValidator.validatePassword]);
+        this.updateSaveButtonState();
     }
 
     setValidatorsForPasswords(validators: any[]): void {
@@ -194,17 +424,23 @@ export class SettingsComponent implements OnInit {
 
     cancelPasswordEdit(): void {
         this.recolherCamposSenha();
-        Object.keys(this.showPassword).forEach(key => {
-            this.showPassword[key as 'senhaAtual' | 'senhaNova' | 'confirmaSenhaNova'] = false;
+        this.hideAllPasswords();
+        this.settingsForm.patchValue({
+            senhaAtual: this.originalPassword,
+            senhaNova: '',
+            confirmaSenhaNova: ''
         });
-        this.isSaveEnabled = false;
+        this.settingsForm.get('senhaAtual')?.clearValidators();
+        this.settingsForm.get('senhaAtual')?.updateValueAndValidity();
+        this.settingsForm.markAsPristine();
+        this.updateSaveButtonState();
+        this.hasClickedSenhaAtual = false;
     }
-
 
     private recolherCamposSenha(): void {
         this.showPasswordFields = false;
         this.showCancelButton = false;
-        this.settingsForm.patchValue({senhaAtual: this.originalPassword, senhaNova: '', confirmaSenhaNova: ''});
+        this.settingsForm.patchValue({senhaAtual: '', senhaNova: '', confirmaSenhaNova: ''});
         this.clearValidatorsForPasswords();
         this.updateSaveButtonState();
     }
@@ -217,7 +453,7 @@ export class SettingsComponent implements OnInit {
     }
 
     updateSaveButtonState(): void {
-        this.isSaveEnabled = this.settingsForm.dirty || this.showPasswordFields;
+        this.isSaveEnabled = this.isAnySaveEnabled();
     }
 
     get rolesControls() {
@@ -230,6 +466,17 @@ export class SettingsComponent implements OnInit {
 
     togglePasswordVisibility(field: 'senhaAtual' | 'senhaNova' | 'confirmaSenhaNova'): void {
         this.showPassword[field] = !this.showPassword[field];
+        if (field === 'senhaAtual' && !this.hasClickedSenhaAtual) {
+            this.settingsForm.patchValue({senhaAtual: ''});
+            this.hasClickedSenhaAtual = true;
+            this.revealPasswordFields();
+        }
+    }
+
+    hideAllPasswords(): void {
+        this.showPassword.senhaAtual = false;
+        this.showPassword.senhaNova = false;
+        this.showPassword.confirmaSenhaNova = false;
     }
 
     validatePassword(field: string): void {
@@ -238,6 +485,14 @@ export class SettingsComponent implements OnInit {
             this.passwordErrors[field] = control.errors;
         } else {
             delete this.passwordErrors[field];
+        }
+    }
+
+    handleSenhaAtualChange(): void {
+        if (!this.hasClickedSenhaAtual) {
+            this.settingsForm.patchValue({senhaAtual: ''});
+            this.hasClickedSenhaAtual = true;
+            this.revealPasswordFields();
         }
     }
 }

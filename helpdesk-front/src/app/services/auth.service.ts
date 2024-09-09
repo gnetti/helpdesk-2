@@ -85,6 +85,11 @@ export class AuthService implements OnDestroy {
         return token ? this.jwtService.decodeToken(token)?.nome ?? null : null;
     }
 
+    isUserIdOne(): boolean {
+        const userId = this.getUserId();
+        return userId === 1;
+    }
+
     refreshToken(): Observable<string> {
         const refreshToken = localStorage.getItem('token')?.replace('Bearer ', '');
         const headers = new HttpHeaders({

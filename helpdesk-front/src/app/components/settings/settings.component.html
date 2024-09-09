@@ -4,16 +4,10 @@
     <h1 class="full-width">Configurações do Usuário</h1>
     <img class="full-width" src="assets/img/chamado-create.svg" alt="Imagem de Configurações">
 
-    <form [formGroup]="settingsForm" class="form" (ngSubmit)="updateSettings()">
+    <form [formGroup]="settingsForm" class="form">
         <mat-form-field class="full-width" appearance="outline">
             <mat-label>ID</mat-label>
-            <input
-                    matInput
-                    id="id"
-                    formControlName="id"
-                    required
-                    readonly
-            />
+            <input matInput id="id" formControlName="id" required readonly/>
             <mat-error *ngIf="settingsForm.get('id')?.hasError('required')">
                 ID é obrigatório
             </mat-error>
@@ -21,13 +15,7 @@
 
         <mat-form-field class="full-width" appearance="outline">
             <mat-label>Nome</mat-label>
-            <input
-                    matInput
-                    id="name"
-                    formControlName="nome"
-                    required
-                    readonly
-            />
+            <input matInput id="name" formControlName="nome" required readonly/>
             <mat-error *ngIf="settingsForm.get('nome')?.hasError('required')">
                 Nome é obrigatório
             </mat-error>
@@ -35,14 +23,7 @@
 
         <mat-form-field class="full-width" appearance="outline">
             <mat-label>Email</mat-label>
-            <input
-                    matInput
-                    id="email"
-                    formControlName="email"
-                    required
-                    readonly
-                    type="email"
-            />
+            <input matInput id="email" formControlName="email" required readonly type="email"/>
             <mat-error *ngIf="settingsForm.get('email')?.hasError('required')">
                 Email é obrigatório
             </mat-error>
@@ -58,17 +39,15 @@
                         matInput
                         id="currentPassword"
                         formControlName="senhaAtual"
-                        type="password"
                         [type]="showPassword.senhaAtual ? 'text' : 'password'"
-                        (focus)="revealPasswordFields()"
-                />
+                        (click)="handleSenhaAtualChange()"
+                        [value]="settingsForm.get('senhaAtual')?.value"/>
                 <div class="button-group">
                     <button
                             type="button"
                             mat-icon-button
                             (click)="togglePasswordVisibility('senhaAtual')"
-                            class="password-visibility-button"
-                    >
+                            class="password-visibility-button">
                         <mat-icon>{{ showPassword.senhaAtual ? 'visibility_off' : 'visibility' }}</mat-icon>
                     </button>
                     <button
@@ -76,8 +55,7 @@
                             mat-icon-button
                             class="info-button"
                             matTooltip="Digite a sua senha atual, antes de escolher uma nova senha."
-                            aria-label="Informação sobre a senha atual"
-                    >
+                            aria-label="Informação sobre a senha atual">
                         <mat-icon>info_outline</mat-icon>
                     </button>
                 </div>
@@ -95,17 +73,14 @@
                             matInput
                             id="newPassword"
                             formControlName="senhaNova"
-                            type="password"
                             [type]="showPassword.senhaNova ? 'text' : 'password'"
-                            (input)="validatePassword('senhaNova')"
-                    />
+                            (input)="validatePassword('senhaNova')"/>
                     <div class="button-group">
                         <button
                                 type="button"
                                 mat-icon-button
                                 (click)="togglePasswordVisibility('senhaNova')"
-                                class="password-visibility-button"
-                        >
+                                class="password-visibility-button">
                             <mat-icon>{{ showPassword.senhaNova ? 'visibility_off' : 'visibility' }}</mat-icon>
                         </button>
                         <button
@@ -113,8 +88,7 @@
                                 mat-icon-button
                                 class="info-button"
                                 matTooltip="A nova senha deve ter pelo menos 10 caracteres e incluir pelo menos uma letra maíscula, uma minúscula, um número e um caractere especial."
-                                aria-label="Informação sobre a nova senha"
-                        >
+                                aria-label="Informação sobre a nova senha">
                             <mat-icon>info_outline</mat-icon>
                         </button>
                     </div>
@@ -137,17 +111,14 @@
                             matInput
                             id="confirmNewPassword"
                             formControlName="confirmaSenhaNova"
-                            type="password"
                             [type]="showPassword.confirmaSenhaNova ? 'text' : 'password'"
-                            (input)="validatePassword('confirmaSenhaNova')"
-                    />
+                            (input)="validatePassword('confirmaSenhaNova')"/>
                     <div class="button-group">
                         <button
                                 type="button"
                                 mat-icon-button
                                 (click)="togglePasswordVisibility('confirmaSenhaNova')"
-                                class="password-visibility-button"
-                        >
+                                class="password-visibility-button">
                             <mat-icon>{{ showPassword.confirmaSenhaNova ? 'visibility_off' : 'visibility' }}</mat-icon>
                         </button>
                         <button
@@ -155,8 +126,7 @@
                                 mat-icon-button
                                 class="info-button"
                                 matTooltip="Confirme a nova senha para garantir que corresponde à senha digitada."
-                                aria-label="Informação sobre a confirmação da nova senha"
-                        >
+                                aria-label="Informação sobre a confirmação da nova senha">
                             <mat-icon>info_outline</mat-icon>
                         </button>
                     </div>
@@ -174,8 +144,7 @@
                     (click)="cancelPasswordEdit()"
                     class="full-width mat-elevation-z4"
                     mat-raised-button
-                    color="warn"
-            >
+                    color="warn">
                 Cancelar
             </button>
         </div>
@@ -186,8 +155,7 @@
                     id="theme"
                     formControlName="tema"
                     required
-                    (selectionChange)="onThemeChange($event)"
-            >
+                    (selectionChange)="onThemeChange($event)">
                 <mat-option *ngFor="let theme of availableThemes" [value]="theme">
                     {{ theme | titlecase }}
                 </mat-option>
@@ -202,17 +170,123 @@
                 </mat-form-field>
             </div>
         </ng-container>
-
-        <button
-                type="submit"
-                [disabled]="!isSaveEnabled"
-                class="full-width mat-elevation-z4"
-                mat-raised-button
-                color="primary"
-        >
-            Salvar
-        </button>
     </form>
+
+    <form *ngIf="showTokenFields" [formGroup]="adminSettingsForm" class="form">
+        <h2>Configurações de Administrador</h2>
+
+        <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Perfil</mat-label>
+            <mat-select formControlName="perfil" (selectionChange)="onPerfilChange($event.value)">
+                <mat-option *ngFor="let perfil of perfis" [value]="perfil.value">
+                    {{ perfil.label }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        <mat-form-field class="full-width admin-form-field" appearance="outline">
+            <mat-label>Expiração JWT (minutos)</mat-label>
+            <input matInput id="jwtExpiracao" formControlName="jwtExpiracao" type="number" class="admin-no-spinner"/>
+            <button
+                    type="button"
+                    mat-icon-button
+                    class="admin-info-button info-button-jwtExpiracao"
+                    matTooltip="Este é tempo total que o token JWT possui quando é gerado e guardado no frontend, após esse tempo ele expira."
+                    aria-label="Informação sobre a expiração do JWT">
+                <mat-icon>info_outline</mat-icon>
+            </button>
+            <mat-error *ngIf="adminSettingsForm.get('jwtExpiracao')?.hasError('jwtExpiracaoRequired')">
+                {{ adminSettingsForm.get('jwtExpiracao')?.errors?.jwtExpiracaoRequired }}
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.get('jwtExpiracao')?.hasError('jwtExpiracaoMin')">
+                {{ adminSettingsForm.get('jwtExpiracao')?.errors?.jwtExpiracaoMin }}
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.get('jwtExpiracao')?.hasError('jwtExpiracaoMax')">
+                {{ adminSettingsForm.get('jwtExpiracao')?.errors?.jwtExpiracaoMax }}
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="full-width admin-form-field" appearance="outline">
+            <mat-label>Tempo de Aviso de Expiração (minutos)</mat-label>
+            <input matInput id="tempoAvisoExpiracaoMinutos" formControlName="tempoAvisoExpiracaoMinutos" type="number"
+                   class="admin-no-spinner"/>
+            <button
+                    type="button"
+                    mat-icon-button
+                    class="admin-info-button info-button-tempoAvisoExpiracaoMinutos"
+                    matTooltip="Aqui o tempo é relativo ao tempo que falta para o token expirar, quando falta este tempo, abre um diálogo para renovar o token antes que expire."
+                    aria-label="Informação sobre o tempo de aviso de expiração">
+                <mat-icon>info_outline</mat-icon>
+            </button>
+            <mat-error *ngIf="adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.hasError('tempoAvisoRequired')">
+                {{ adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.errors?.tempoAvisoRequired }}
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.hasError('tempoAvisoMin')">
+                {{ adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.errors?.tempoAvisoMin }}
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.hasError('tempoAvisoMax')">
+                {{ adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.errors?.tempoAvisoMax }}
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.hasError('tempoAvisoInadequado')">
+                {{ adminSettingsForm.getError('tempoAvisoInadequado') }}
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="full-width admin-form-field" appearance="outline">
+            <mat-label>Tempo de Exibição do Diálogo (minutos)</mat-label>
+            <input matInput id="tempoExibicaoDialogoMinutos" formControlName="tempoExibicaoDialogoMinutos" type="number"
+                   class="admin-no-spinner"/>
+            <button
+                    type="button"
+                    mat-icon-button
+                    class="admin-info-button info-button-tempoExibicaoDialogoMinutos"
+                    matTooltip="Este é o tempo que o diálogo ficará aberto aguardando o usuário atualizar seu token, após o token ser destruído e o usuário terá que fazer novo login."
+                    aria-label="Informação sobre o tempo de exibição do diálogo">
+                <mat-icon>info_outline</mat-icon>
+            </button>
+            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoMinutos')?.hasError('required')">
+                O campo "Tempo de Exibição do Diálogo" é obrigatório.
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoMinutos')?.hasError('min')">
+                O valor deve ser pelo menos 2 minutos.
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoMinutos')?.hasError('max')">
+                O valor não pode ser maior que 15 minutos.
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="full-width admin-form-field" appearance="outline">
+            <mat-label>Intervalo de Atualização (minutos)</mat-label>
+            <input matInput id="intervaloAtualizacaoMinutos" formControlName="intervaloAtualizacaoMinutos" type="number"
+                   class="admin-no-spinner"/>
+            <button
+                    type="button"
+                    mat-icon-button
+                    class="admin-info-button info-button-intervaloAtualizacaoMinutos"
+                    matTooltip="Aqui o tempo é utilizado para que o serviço que verifica o tempo útil do token seja atualizado, esse tempo é contabilizado para abrir o diálogo."
+                    aria-label="Informação sobre o intervalo de atualização">
+                <mat-icon>info_outline</mat-icon>
+            </button>
+            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoMinutos')?.hasError('required')">
+                O campo "Tempo de atualização" é obrigatório.
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoMinutos')?.hasError('min')">
+                O valor deve ser pelo menos 0.5 minutos.
+            </mat-error>
+            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoMinutos')?.hasError('max')">
+                O valor não pode ser maior que 5 minutos.
+            </mat-error>
+        </mat-form-field>
+    </form>
+
+    <button
+            (click)="saveAllSettings()"
+            [disabled]="!isAnySaveEnabled()"
+            class="full-width mat-elevation-z4"
+            mat-raised-button
+            color="primary">
+        Salvar Todas as Configurações
+    </button>
 
     <p class="full-width">Desenvolvido por Luiz Generoso</p>
 </div>

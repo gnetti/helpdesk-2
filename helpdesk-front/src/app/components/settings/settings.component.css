@@ -31,6 +31,7 @@ img {
 
 mat-form-field {
     margin-bottom: 16px;
+    width: 100%;
 }
 
 button {
@@ -91,4 +92,64 @@ mat-icon {
 
 .mat-tooltip {
     z-index: 1000;
+}
+
+.input-container {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.info-button-jwtExpiracao {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 0;
+    height: 24px;
+    width: 24px;
+    color: rgba(0, 0, 0, 0.54);
+    z-index: 2;
+}
+
+.info-button-tempoAvisoExpiracaoMinutos {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 0;
+    height: 24px;
+    width: 24px;
+    color: rgba(0, 0, 0, 0.54);
+    z-index: 2;
+}
+
+.info-button-intervaloAtualizacaoMinutos {
+    position: absolute;
+    right: 0;
+    top: -0;
+    margin: 0;
+    height: 24px;
+    width: 24px;
+    color: rgba(0, 0, 0, 0.54);
+    z-index: 2;
+}
+
+.info-button-tempoExibicaoDialogoMinutos {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 0;
+    height: 24px;
+    width: 24px;
+    color: rgba(0, 0, 0, 0.54);
+    z-index: 2;
+}
+
+.admin-no-spinner::-webkit-inner-spin-button,
+.admin-no-spinner::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.admin-no-spinner {
+    -moz-appearance: textfield;
 }
