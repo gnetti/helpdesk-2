@@ -100,7 +100,7 @@ mat-icon {
     position: relative;
 }
 
-.info-button-jwtExpiracao {
+.info-button-tokenTempoExpiracaoMinutos {
     position: absolute;
     right: 0;
     top: 0;
@@ -111,7 +111,7 @@ mat-icon {
     z-index: 2;
 }
 
-.info-button-tempoAvisoExpiracaoMinutos {
+.info-button-tempoTokenExibeDialogoMinutos {
     position: absolute;
     right: 0;
     top: 0;
@@ -122,21 +122,21 @@ mat-icon {
     z-index: 2;
 }
 
-.info-button-intervaloAtualizacaoMinutos {
+.info-button-tempoExibicaoDialogoAtualizaTokenMinutos {
+    position: absolute;
+    right: 0;
+    top: 0;
+    margin: 0;
+    height: 24px;
+    width: 24px;
+    color: rgba(0, 0, 0, 0.54);
+    z-index: 2;
+}
+
+.info-button-intervaloAtualizacaoTokenMinutos {
     position: absolute;
     right: 0;
     top: -0;
-    margin: 0;
-    height: 24px;
-    width: 24px;
-    color: rgba(0, 0, 0, 0.54);
-    z-index: 2;
-}
-
-.info-button-tempoExibicaoDialogoMinutos {
-    position: absolute;
-    right: 0;
-    top: 0;
     margin: 0;
     height: 24px;
     width: 24px;

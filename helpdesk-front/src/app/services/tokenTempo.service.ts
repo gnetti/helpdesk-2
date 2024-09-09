@@ -1,6 +1,6 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { API_CONFIG } from '../config/api.config';
 import { TokenTempo } from "../models/TokenTempo";
@@ -13,12 +13,15 @@ export class TokenTempoService {
 
     constructor(private http: HttpClient, private authService: AuthService) {}
 
-    private handleError(err: any): Observable<never> {
+    private handleError(err: HttpErrorResponse): Observable<null> {
         console.error('Erro ao processar operação de TokenTempo:', err);
+        if (err.status === 404) {
+            return of(null);
+        }
         return throwError(() => new Error(err.error?.message || 'Erro desconhecido ao processar TokenTempo'));
     }
 
-    findByPerfil(perfil: string): Observable<TokenTempo> {
+    findByPerfil(perfil: string): Observable<TokenTempo | null> {
         if (!this.authService.isUserIdOne()) {
             return throwError(() => new Error('Acesso negado: Apenas o usuário com ID 1 tem acesso a essas configurações.'));
         }
@@ -32,6 +35,10 @@ export class TokenTempoService {
     }
 
     create(tokenTempoDTO: TokenTempo): Observable<TokenTempo> {
+        if (!this.authService.isUserIdOne()) {
+            return throwError(() => new Error('Acesso negado: Apenas o usuário com ID 1 tem acesso a essas configurações.'));
+        }
+
         const endpoint = `${API_CONFIG.baseUrl}/token-tempo`;
 
         return this.http.post<TokenTempo>(endpoint, tokenTempoDTO).pipe(
@@ -40,6 +47,10 @@ export class TokenTempoService {
     }
 
     update(id: number, tokenTempoDTO: TokenTempo): Observable<TokenTempo> {
+        if (!this.authService.isUserIdOne()) {
+            return throwError(() => new Error('Acesso negado: Apenas o usuário com ID 1 tem acesso a essas configurações.'));
+        }
+
         const endpoint = `${API_CONFIG.baseUrl}/token-tempo/${id}`;
 
         return this.http.put<TokenTempo>(endpoint, tokenTempoDTO).pipe(

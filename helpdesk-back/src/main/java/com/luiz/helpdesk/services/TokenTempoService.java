@@ -43,10 +43,10 @@ public class TokenTempoService {
         objDTO.setId(null);
         TokenTempo tokenTempo = new TokenTempo(
                 objDTO.getId(),
-                objDTO.getTempoAvisoExpiracaoMinutos(),
-                objDTO.getTempoExibicaoDialogoMinutos(),
-                objDTO.getIntervaloAtualizacaoMinutos(),
-                objDTO.getJwtExpiracao(),
+                objDTO.getTokenTempoExpiracaoMinutos(),
+                objDTO.getTempoTokenExibeDialogoMinutos(),
+                objDTO.getTempoExibicaoDialogoAtualizaTokenMinutos(),
+                objDTO.getIntervaloAtualizacaoTokenMinutos(),
                 objDTO.getPerfil()
         );
         tokenTempo = tokenTempoRepository.save(tokenTempo);
@@ -58,19 +58,18 @@ public class TokenTempoService {
         checkAuthorization();
         TokenTempo oldObj = tokenTempoRepository.findById(id)
                 .orElseThrow(() -> new ObjectnotFoundException("Objeto não encontrado! Id: " + id));
-        oldObj.setTempoAvisoExpiracaoMinutos(objDTO.getTempoAvisoExpiracaoMinutos());
-        oldObj.setTempoExibicaoDialogoMinutos(objDTO.getTempoExibicaoDialogoMinutos());
-        oldObj.setIntervaloAtualizacaoMinutos(objDTO.getIntervaloAtualizacaoMinutos());
-        oldObj.setJwtExpiracao(objDTO.getJwtExpiracao());
+        oldObj.setTokenTempoExpiracaoMinutos(objDTO.getTokenTempoExpiracaoMinutos());
+        oldObj.setTempoTokenExibeDialogoMinutos(objDTO.getTempoTokenExibeDialogoMinutos());
+        oldObj.setTempoExibicaoDialogoAtualizaTokenMinutos(objDTO.getTempoExibicaoDialogoAtualizaTokenMinutos());
+        oldObj.setIntervaloAtualizacaoTokenMinutos(objDTO.getIntervaloAtualizacaoTokenMinutos());
         oldObj = tokenTempoRepository.save(oldObj);
         return toDTO(oldObj);
     }
 
-    public TokenTempoDTO findByPerfil(Perfil perfil) {
+    public Optional<TokenTempoDTO> findByPerfil(Perfil perfil) {
         checkAuthorization();
-        TokenTempo tokenTempo = tokenTempoRepository.findByPerfil(perfil)
-                .orElseThrow(() -> new RuntimeException("TokenTempo não encontrado para o perfil: " + perfil));
-        return new TokenTempoDTO(tokenTempo);
+        Optional<TokenTempo> tokenTempo = tokenTempoRepository.findByPerfil(perfil);
+        return tokenTempo.map(this::toDTO);
     }
 
     public boolean existsByPerfil(String perfil) {
@@ -88,10 +87,10 @@ public class TokenTempoService {
     private TokenTempoDTO toDTO(TokenTempo tokenTempo) {
         return new TokenTempoDTO(
                 tokenTempo.getId(),
-                tokenTempo.getTempoAvisoExpiracaoMinutos(),
-                tokenTempo.getTempoExibicaoDialogoMinutos(),
-                tokenTempo.getIntervaloAtualizacaoMinutos(),
-                tokenTempo.getJwtExpiracao(),
+                tokenTempo.getTokenTempoExpiracaoMinutos(),
+                tokenTempo.getTempoTokenExibeDialogoMinutos(),
+                tokenTempo.getTempoExibicaoDialogoAtualizaTokenMinutos(),
+                tokenTempo.getIntervaloAtualizacaoTokenMinutos(),
                 tokenTempo.getPerfil()
         );
     }

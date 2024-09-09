@@ -184,97 +184,103 @@
             </mat-select>
         </mat-form-field>
 
+        <mat-form-field *ngIf="!isNewProfile" appearance="outline" class="full-width">
+            <mat-label>ID</mat-label>
+            <input matInput [value]="perfilId" readonly>
+        </mat-form-field>
+
         <mat-form-field class="full-width admin-form-field" appearance="outline">
-            <mat-label>Expiração JWT (minutos)</mat-label>
-            <input matInput id="jwtExpiracao" formControlName="jwtExpiracao" type="number" class="admin-no-spinner"/>
+            <mat-label>Tempo de Expiração do Token (minutos)</mat-label>
+            <input matInput id="tokenTempoExpiracaoMinutos" formControlName="tokenTempoExpiracaoMinutos" type="number" class="admin-no-spinner"/>
             <button
                     type="button"
                     mat-icon-button
-                    class="admin-info-button info-button-jwtExpiracao"
-                    matTooltip="Este é tempo total que o token JWT possui quando é gerado e guardado no frontend, após esse tempo ele expira."
-                    aria-label="Informação sobre a expiração do JWT">
+                    class="admin-info-button info-button-tokenTempoExpiracaoMinutos"
+                    matTooltip="Este é o tempo total que o token JWT possui quando é gerado e guardado no frontend, após esse tempo ele expira."
+                    aria-label="Informação sobre a expiração do Token">
                 <mat-icon>info_outline</mat-icon>
             </button>
-            <mat-error *ngIf="adminSettingsForm.get('jwtExpiracao')?.hasError('jwtExpiracaoRequired')">
-                {{ adminSettingsForm.get('jwtExpiracao')?.errors?.jwtExpiracaoRequired }}
+            <mat-error *ngIf="adminSettingsForm.get('tokenTempoExpiracaoMinutos')?.hasError('tokenTempoExpiracaoMinutosRequired')">
+                O campo "Tempo de Expiração do Token" é obrigatório.
             </mat-error>
-            <mat-error *ngIf="adminSettingsForm.get('jwtExpiracao')?.hasError('jwtExpiracaoMin')">
-                {{ adminSettingsForm.get('jwtExpiracao')?.errors?.jwtExpiracaoMin }}
+            <mat-error *ngIf="adminSettingsForm.get('tokenTempoExpiracaoMinutos')?.hasError('tokenTempoExpiracaoMinutosMin')">
+                O valor deve ser pelo menos 60 minutos.
             </mat-error>
-            <mat-error *ngIf="adminSettingsForm.get('jwtExpiracao')?.hasError('jwtExpiracaoMax')">
-                {{ adminSettingsForm.get('jwtExpiracao')?.errors?.jwtExpiracaoMax }}
+            <mat-error *ngIf="adminSettingsForm.get('tokenTempoExpiracaoMinutos')?.hasError('tokenTempoExpiracaoMinutosMax')">
+                O valor não pode ser maior que 1440 minutos.
             </mat-error>
         </mat-form-field>
 
         <mat-form-field class="full-width admin-form-field" appearance="outline">
-            <mat-label>Tempo de Aviso de Expiração (minutos)</mat-label>
-            <input matInput id="tempoAvisoExpiracaoMinutos" formControlName="tempoAvisoExpiracaoMinutos" type="number"
+            <mat-label>Tempo Restante do Token para Exibir Diálogo (minutos)</mat-label>
+            <input matInput id="tempoTokenExibeDialogoMinutos" formControlName="tempoTokenExibeDialogoMinutos" type="number"
                    class="admin-no-spinner"/>
             <button
                     type="button"
                     mat-icon-button
-                    class="admin-info-button info-button-tempoAvisoExpiracaoMinutos"
+                    class="admin-info-button info-button-tempoTokenExibeDialogoMinutos"
                     matTooltip="Aqui o tempo é relativo ao tempo que falta para o token expirar, quando falta este tempo, abre um diálogo para renovar o token antes que expire."
-                    aria-label="Informação sobre o tempo de aviso de expiração">
+                    aria-label="Informação sobre o tempo para exibir o diálogo de token">
                 <mat-icon>info_outline</mat-icon>
             </button>
-            <mat-error *ngIf="adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.hasError('tempoAvisoRequired')">
-                {{ adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.errors?.tempoAvisoRequired }}
+            <mat-error *ngIf="adminSettingsForm.get('tempoTokenExibeDialogoMinutos')?.hasError('tempoTokenExibeDialogoMinutosRequired')">
+                O campo "Tempo para Exibir Diálogo de Token" é obrigatório.
             </mat-error>
-            <mat-error *ngIf="adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.hasError('tempoAvisoMin')">
-                {{ adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.errors?.tempoAvisoMin }}
+            <mat-error *ngIf="adminSettingsForm.get('tempoTokenExibeDialogoMinutos')?.hasError('tempoTokenExibeDialogoMinutosMin')">
+                O tempo para exibir o diálogo deve ser pelo menos 15 minutos.
             </mat-error>
-            <mat-error *ngIf="adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.hasError('tempoAvisoMax')">
-                {{ adminSettingsForm.get('tempoAvisoExpiracaoMinutos')?.errors?.tempoAvisoMax }}
-            </mat-error>
-            <mat-error *ngIf="adminSettingsForm.hasError('tempoAvisoInadequado')">
-                {{ adminSettingsForm.getError('tempoAvisoInadequado') }}
+            <mat-error *ngIf="adminSettingsForm.get('tempoTokenExibeDialogoMinutos')?.hasError('tempoTokenExibeDialogoMinutosMax')">
+                O tempo para exibir o diálogo não pode ser maior que 30 minutos.
             </mat-error>
         </mat-form-field>
 
+        <mat-error *ngIf="adminSettingsForm.hasError('tempoAvisoInadequado')">
+            O tempo para exibir o diálogo deve garantir pelo menos 15 minutos antes da expiração do Token.
+        </mat-error>
+
         <mat-form-field class="full-width admin-form-field" appearance="outline">
-            <mat-label>Tempo de Exibição do Diálogo (minutos)</mat-label>
-            <input matInput id="tempoExibicaoDialogoMinutos" formControlName="tempoExibicaoDialogoMinutos" type="number"
+            <mat-label>Tempo de Exibição do Diálogo para Atualizar Token (minutos)</mat-label>
+            <input matInput id="tempoExibicaoDialogoAtualizaTokenMinutos" formControlName="tempoExibicaoDialogoAtualizaTokenMinutos" type="number"
                    class="admin-no-spinner"/>
             <button
                     type="button"
                     mat-icon-button
-                    class="admin-info-button info-button-tempoExibicaoDialogoMinutos"
+                    class="admin-info-button info-button-tempoExibicaoDialogoAtualizaTokenMinutos"
                     matTooltip="Este é o tempo que o diálogo ficará aberto aguardando o usuário atualizar seu token, após o token ser destruído e o usuário terá que fazer novo login."
-                    aria-label="Informação sobre o tempo de exibição do diálogo">
+                    aria-label="Informação sobre o tempo de exibição do diálogo para atualizar token">
                 <mat-icon>info_outline</mat-icon>
             </button>
-            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoMinutos')?.hasError('required')">
-                O campo "Tempo de Exibição do Diálogo" é obrigatório.
+            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoAtualizaTokenMinutos')?.hasError('required')">
+                O campo "Tempo de Exibição do Diálogo para Atualizar Token" é obrigatório.
             </mat-error>
-            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoMinutos')?.hasError('min')">
-                O valor deve ser pelo menos 2 minutos.
+            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoAtualizaTokenMinutos')?.hasError('min')">
+                O valor deve ser pelo menos {{ adminSettingsForm.get('tempoExibicaoDialogoAtualizaTokenMinutos')?.errors?.min?.min }} minutos.
             </mat-error>
-            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoMinutos')?.hasError('max')">
-                O valor não pode ser maior que 15 minutos.
+            <mat-error *ngIf="adminSettingsForm.get('tempoExibicaoDialogoAtualizaTokenMinutos')?.hasError('max')">
+                O valor não pode ser maior que {{ adminSettingsForm.get('tempoExibicaoDialogoAtualizaTokenMinutos')?.errors?.max?.max }} minutos.
             </mat-error>
         </mat-form-field>
 
         <mat-form-field class="full-width admin-form-field" appearance="outline">
-            <mat-label>Intervalo de Atualização (minutos)</mat-label>
-            <input matInput id="intervaloAtualizacaoMinutos" formControlName="intervaloAtualizacaoMinutos" type="number"
+            <mat-label>Intervalo de Atualização do Token (minutos)</mat-label>
+            <input matInput id="intervaloAtualizacaoTokenMinutos" formControlName="intervaloAtualizacaoTokenMinutos" type="number"
                    class="admin-no-spinner"/>
             <button
                     type="button"
                     mat-icon-button
-                    class="admin-info-button info-button-intervaloAtualizacaoMinutos"
+                    class="admin-info-button info-button-intervaloAtualizacaoTokenMinutos"
                     matTooltip="Aqui o tempo é utilizado para que o serviço que verifica o tempo útil do token seja atualizado, esse tempo é contabilizado para abrir o diálogo."
-                    aria-label="Informação sobre o intervalo de atualização">
+                    aria-label="Informação sobre o intervalo de atualização do token">
                 <mat-icon>info_outline</mat-icon>
             </button>
-            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoMinutos')?.hasError('required')">
-                O campo "Tempo de atualização" é obrigatório.
+            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoTokenMinutos')?.hasError('required')">
+                O campo "Intervalo de Atualização do Token" é obrigatório.
             </mat-error>
-            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoMinutos')?.hasError('min')">
-                O valor deve ser pelo menos 0.5 minutos.
+            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoTokenMinutos')?.hasError('min')">
+                O valor deve ser pelo menos {{ adminSettingsForm.get('intervaloAtualizacaoTokenMinutos')?.errors?.min?.min }} minutos.
             </mat-error>
-            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoMinutos')?.hasError('max')">
-                O valor não pode ser maior que 5 minutos.
+            <mat-error *ngIf="adminSettingsForm.get('intervaloAtualizacaoTokenMinutos')?.hasError('max')">
+                O valor não pode ser maior que {{ adminSettingsForm.get('intervaloAtualizacaoTokenMinutos')?.errors?.max?.max }} minutos.
             </mat-error>
         </mat-form-field>
     </form>

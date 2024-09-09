@@ -17,21 +17,21 @@ public class TokenTempo implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    private BigDecimal tempoAvisoExpiracaoMinutos;
-    private BigDecimal tempoExibicaoDialogoMinutos;
-    private BigDecimal intervaloAtualizacaoMinutos;
-    private BigDecimal jwtExpiracao;
+    private BigDecimal tokenTempoExpiracaoMinutos;
+    private BigDecimal tempoTokenExibeDialogoMinutos;
+    private BigDecimal tempoExibicaoDialogoAtualizaTokenMinutos;
+    private BigDecimal intervaloAtualizacaoTokenMinutos;
     private Perfil perfil;
 
     public TokenTempo() {
     }
 
-    public TokenTempo(Integer id, BigDecimal tempoAvisoExpiracaoMinutos, BigDecimal tempoExibicaoDialogoMinutos, BigDecimal intervaloAtualizacaoMinutos, BigDecimal jwtExpiracao, Perfil perfil) { // Alterado no construtor
+    public TokenTempo(Integer id, BigDecimal tokenTempoExpiracaoMinutos, BigDecimal tempoTokenExibeDialogoMinutos, BigDecimal tempoExibicaoDialogoAtualizaTokenMinutos, BigDecimal intervaloAtualizacaoTokenMinutos, Perfil perfil) {
         this.id = id;
-        this.tempoAvisoExpiracaoMinutos = tempoAvisoExpiracaoMinutos;
-        this.tempoExibicaoDialogoMinutos = tempoExibicaoDialogoMinutos;
-        this.intervaloAtualizacaoMinutos = intervaloAtualizacaoMinutos;
-        this.jwtExpiracao = jwtExpiracao;
+        this.tokenTempoExpiracaoMinutos = tokenTempoExpiracaoMinutos;
+        this.tempoTokenExibeDialogoMinutos = tempoTokenExibeDialogoMinutos;
+        this.tempoExibicaoDialogoAtualizaTokenMinutos = tempoExibicaoDialogoAtualizaTokenMinutos;
+        this.intervaloAtualizacaoTokenMinutos = intervaloAtualizacaoTokenMinutos;
         this.perfil = perfil;
     }
 
@@ -43,36 +43,36 @@ public class TokenTempo implements Serializable {
         this.id = id;
     }
 
-    public BigDecimal getTempoAvisoExpiracaoMinutos() {
-        return tempoAvisoExpiracaoMinutos;
+    public BigDecimal getTokenTempoExpiracaoMinutos() {
+        return tokenTempoExpiracaoMinutos;
     }
 
-    public void setTempoAvisoExpiracaoMinutos(BigDecimal tempoAvisoExpiracaoMinutos) {
-        this.tempoAvisoExpiracaoMinutos = tempoAvisoExpiracaoMinutos;
+    public void setTokenTempoExpiracaoMinutos(BigDecimal tokenTempoExpiracaoMinutos) {
+        this.tokenTempoExpiracaoMinutos = tokenTempoExpiracaoMinutos;
     }
 
-    public BigDecimal getTempoExibicaoDialogoMinutos() {
-        return tempoExibicaoDialogoMinutos;
+    public BigDecimal getTempoTokenExibeDialogoMinutos() {
+        return tempoTokenExibeDialogoMinutos;
     }
 
-    public void setTempoExibicaoDialogoMinutos(BigDecimal tempoExibicaoDialogoMinutos) {
-        this.tempoExibicaoDialogoMinutos = tempoExibicaoDialogoMinutos;
+    public void setTempoTokenExibeDialogoMinutos(BigDecimal tempoTokenExibeDialogoMinutos) {
+        this.tempoTokenExibeDialogoMinutos = tempoTokenExibeDialogoMinutos;
     }
 
-    public BigDecimal getIntervaloAtualizacaoMinutos() {
-        return intervaloAtualizacaoMinutos;
+    public BigDecimal getTempoExibicaoDialogoAtualizaTokenMinutos() {
+        return tempoExibicaoDialogoAtualizaTokenMinutos;
     }
 
-    public void setIntervaloAtualizacaoMinutos(BigDecimal intervaloAtualizacaoMinutos) {
-        this.intervaloAtualizacaoMinutos = intervaloAtualizacaoMinutos;
+    public void setTempoExibicaoDialogoAtualizaTokenMinutos(BigDecimal tempoExibicaoDialogoAtualizaTokenMinutos) {
+        this.tempoExibicaoDialogoAtualizaTokenMinutos = tempoExibicaoDialogoAtualizaTokenMinutos;
     }
 
-    public BigDecimal getJwtExpiracao() {
-        return jwtExpiracao;
+    public BigDecimal getIntervaloAtualizacaoTokenMinutos() {
+        return intervaloAtualizacaoTokenMinutos;
     }
 
-    public void setJwtExpiracao(BigDecimal jwtExpiracao) {
-        this.jwtExpiracao = jwtExpiracao;
+    public void setIntervaloAtualizacaoTokenMinutos(BigDecimal intervaloAtualizacaoTokenMinutos) {
+        this.intervaloAtualizacaoTokenMinutos = intervaloAtualizacaoTokenMinutos;
     }
 
     public Perfil getPerfil() {
@@ -93,15 +93,15 @@ public class TokenTempo implements Serializable {
         }
         TokenTempo other = (TokenTempo) obj;
         return Objects.equals(id, other.id)
-                && Objects.equals(tempoAvisoExpiracaoMinutos, other.tempoAvisoExpiracaoMinutos)
-                && Objects.equals(tempoExibicaoDialogoMinutos, other.tempoExibicaoDialogoMinutos)
-                && Objects.equals(intervaloAtualizacaoMinutos, other.intervaloAtualizacaoMinutos)
-                && Objects.equals(jwtExpiracao, other.jwtExpiracao)
+                && Objects.equals(tokenTempoExpiracaoMinutos, other.tokenTempoExpiracaoMinutos)
+                && Objects.equals(tempoTokenExibeDialogoMinutos, other.tempoTokenExibeDialogoMinutos)
+                && Objects.equals(tempoExibicaoDialogoAtualizaTokenMinutos, other.tempoExibicaoDialogoAtualizaTokenMinutos)
+                && Objects.equals(intervaloAtualizacaoTokenMinutos, other.intervaloAtualizacaoTokenMinutos)
                 && perfil == other.perfil;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, tempoAvisoExpiracaoMinutos, tempoExibicaoDialogoMinutos, intervaloAtualizacaoMinutos, jwtExpiracao, perfil); // Alterado para jwtExpiracao
+        return Objects.hash(id, tokenTempoExpiracaoMinutos, tempoTokenExibeDialogoMinutos, tempoExibicaoDialogoAtualizaTokenMinutos, intervaloAtualizacaoTokenMinutos, perfil);
     }
 }

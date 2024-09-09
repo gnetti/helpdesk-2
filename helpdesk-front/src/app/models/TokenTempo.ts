@@ -1,8 +1,8 @@
 export interface TokenTempo {
     id: number;
-    tempoAvisoExpiracaoMinutos: number;
-    tempoExibicaoDialogoMinutos: number;
-    intervaloAtualizacaoMinutos: number;
-    jwtExpiracao: number;
+    tokenTempoExpiracaoMinutos: number;
+    tempoTokenExibeDialogoMinutos: number;
+    tempoExibicaoDialogoAtualizaTokenMinutos: number;
+    intervaloAtualizacaoTokenMinutos: number;
     perfil: string;
 }

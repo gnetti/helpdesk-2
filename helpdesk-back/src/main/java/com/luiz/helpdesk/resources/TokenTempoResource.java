@@ -12,6 +12,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.util.Optional;
 
 @RestController
 @RequestMapping(value = "/token-tempo")
@@ -49,9 +50,13 @@ public class TokenTempoResource {
         TokenTempoDTO updatedDTO = tokenTempoService.update(id, objDTO);
         return ResponseEntity.ok().body(updatedDTO);
     }
+
     @GetMapping("/role")
-    public TokenTempoDTO findByPerfil(@RequestParam("perfil") Perfil perfil) {
+    public ResponseEntity<TokenTempoDTO> findByPerfil(@RequestParam("perfil") Perfil perfil) {
         checkAuthorization();
-        return tokenTempoService.findByPerfil(perfil);
+        Optional<TokenTempoDTO> tokenTempoDTO = tokenTempoService.findByPerfil(perfil);
+        return tokenTempoDTO
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

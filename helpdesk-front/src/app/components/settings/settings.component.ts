@@ -12,7 +12,7 @@ import {AuthService} from "../../services/auth.service";
 import {getUserRoles, UserRole} from "../enum/userRole";
 import {TokenTempoService} from "../../services/tokenTempo.service";
 import {TokenTempo} from "../../models/TokenTempo";
-import {TempoAvisoExpiracaoValidator} from "../../config/validator/validateTempoAvisoExpiracao";
+import {TempoAvisoExpiracaoValidator} from "../../config/validator/validateTokenTempo";
 
 @Component({
     selector: 'app-settings',
@@ -38,6 +38,10 @@ export class SettingsComponent implements OnInit {
     adminSettingsId: number | null = null;
     originalAdminSettings: any = {};
     hasClickedSenhaAtual = false;
+    perfilId: number | null = null;
+    isNewProfile: boolean = false;
+    isSaving: boolean = false;
+    shownNewProfileMessages: { [key in UserRole]?: boolean } = {};
 
     constructor(
         private fb: FormBuilder,
@@ -76,10 +80,10 @@ export class SettingsComponent implements OnInit {
 
         this.adminSettingsForm = this.fb.group({
             perfil: [this.UserRole.ADMIN, Validators.required],
-            jwtExpiracao: ['', [TempoAvisoExpiracaoValidator.validateJwtExpiracao]],
-            tempoAvisoExpiracaoMinutos: ['', [TempoAvisoExpiracaoValidator.validateTempoAvisoExpiracaoMinutos]],
-            tempoExibicaoDialogoMinutos: ['', [Validators.required, Validators.min(2), Validators.max(15)]],
-            intervaloAtualizacaoMinutos: ['', [Validators.required, Validators.min(0.5), Validators.max(5)]]
+            tokenTempoExpiracaoMinutos: ['', [TempoAvisoExpiracaoValidator.validateJwtExpiracao]],
+            tempoTokenExibeDialogoMinutos: ['', [TempoAvisoExpiracaoValidator.validateTempoAvisoExpiracaoMinutos]],
+            tempoExibicaoDialogoAtualizaTokenMinutos: ['', [Validators.required, Validators.min(2), Validators.max(15)]],
+            intervaloAtualizacaoTokenMinutos: ['', [Validators.required, Validators.min(0.5), Validators.max(5)]]
         }, {
             validators: TempoAvisoExpiracaoValidator.validateTempoAvisoExpiracao()
         });
@@ -129,51 +133,105 @@ export class SettingsComponent implements OnInit {
     onPerfilChange(value: string): void {
         if (Object.values(UserRole).includes(value as unknown as UserRole)) {
             this.selectedRole = value as unknown as UserRole;
+            this.shownNewProfileMessages[this.selectedRole] = false;
             this.loadAdminSettings(this.selectedRole);
         } else {
-            // Handle invalid role
         }
     }
 
     loadAdminSettings(perfil: UserRole): void {
-        this.tokenTempoService.findByPerfil(UserRole[perfil]).subscribe(
-            (settings: TokenTempo) => {
-                this.adminSettingsId = settings.id;
-                this.patchFormWithAdminSettings(settings);
-                this.showTokenFields = true;
-                this.originalAdminSettings = {...settings};
-                this.adminSettingsForm.markAsPristine();
-                this.updateSaveButtonState();
-            },
-            (error) => {
-                if (error.status === 404) {
-                    this.adminSettingsId = null;
-                    this.initializeAdminSettingsWithDefaults();
+        this.tokenTempoService.findByPerfil(UserRole[perfil]).subscribe({
+            next: (settings: TokenTempo | null) => {
+                if (settings) {
+                    this.adminSettingsId = settings.id;
+                    this.perfilId = settings.id;
+                    this.patchFormWithAdminSettings(settings);
                     this.showTokenFields = true;
+                    this.originalAdminSettings = {...settings};
+                    this.adminSettingsForm.markAsPristine();
+                    this.updateSaveButtonState();
+                    this.isNewProfile = false;
+                    this.showIdField();
+                    this.shownNewProfileMessages[perfil] = false;
                 } else {
-                    this.toast.warning('Erro ao carregar configurações de admin.', 'Fechar');
+                    this.initializeAdminSettingsWithDefaults();
+                    this.showToastForNewProfile(perfil);
+                }
+            },
+            error: (error: any) => {
+                if (error === null || (typeof error === 'function' && error() === null)) {
+                    this.initializeAdminSettingsWithDefaults();
+                    this.showToastForNewProfile(perfil);
+                } else {
+                    this.toast.warning('Erro ao carregar configurações de admin.', 'Erro');
                 }
             }
-        );
+        });
+    }
+
+    private showToastForNewProfile(perfil: UserRole): void {
+        if (!this.shownNewProfileMessages[perfil]) {
+            let perfilName: string;
+            switch (perfil) {
+                case UserRole.ADMIN:
+                    perfilName = 'ROLE_ADMIN';
+                    break;
+                case UserRole.TECNICO:
+                    perfilName = 'ROLE_TECNICO';
+                    break;
+                case UserRole.CLIENTE:
+                    perfilName = 'ROLE_CLIENTE';
+                    break;
+                default:
+                    perfilName = 'Desconhecido';
+            }
+            this.toast.info(`Não encontrado dados para o perfil ${this.translateRole(perfilName)}, você deve cadastrar!`, 'Info');
+            this.shownNewProfileMessages[perfil] = true;
+        }
     }
 
     private initializeAdminSettingsWithDefaults(): void {
         const defaultSettings = {
-            jwtExpiracao: 60,
-            tempoAvisoExpiracaoMinutos: 5,
-            tempoExibicaoDialogoMinutos: 2,
-            intervaloAtualizacaoMinutos: 1
+            tokenTempoExpiracaoMinutos: 1440,
+            tempoTokenExibeDialogoMinutos: 30,
+            tempoExibicaoDialogoAtualizaTokenMinutos: 15,
+            intervaloAtualizacaoTokenMinutos: 1
         };
         this.adminSettingsForm.patchValue(defaultSettings);
         this.originalAdminSettings = {...defaultSettings};
+        this.adminSettingsId = null;
+        this.perfilId = null;
+        this.adminSettingsForm.markAsDirty();
+        this.showTokenFields = true;
+        this.isNewProfile = true;
+        this.hideIdField();
+    }
+
+    private hideIdField(): void {
+        const idControl = this.adminSettingsForm.get('id');
+        if (idControl) {
+            idControl.disable();
+            idControl.setValue(null);
+        }
+        this.adminSettingsForm.removeControl('id');
+    }
+
+    private showIdField(): void {
+        if (!this.adminSettingsForm.contains('id')) {
+            this.adminSettingsForm.addControl('id', this.fb.control({value: '', disabled: true}));
+        }
+        const idControl = this.adminSettingsForm.get('id');
+        if (idControl) {
+            idControl.enable();
+        }
     }
 
     patchFormWithAdminSettings(settings: TokenTempo): void {
         this.adminSettingsForm.patchValue({
-            jwtExpiracao: settings.jwtExpiracao,
-            tempoAvisoExpiracaoMinutos: settings.tempoAvisoExpiracaoMinutos,
-            tempoExibicaoDialogoMinutos: settings.tempoExibicaoDialogoMinutos,
-            intervaloAtualizacaoMinutos: settings.intervaloAtualizacaoMinutos
+            tokenTempoExpiracaoMinutos: settings.tokenTempoExpiracaoMinutos,
+            tempoTokenExibeDialogoMinutos: settings.tempoTokenExibeDialogoMinutos,
+            tempoExibicaoDialogoAtualizaTokenMinutos: settings.tempoExibicaoDialogoAtualizaTokenMinutos,
+            intervaloAtualizacaoTokenMinutos: settings.intervaloAtualizacaoTokenMinutos
         });
     }
 
@@ -234,9 +292,11 @@ export class SettingsComponent implements OnInit {
         Promise.all([userSettingsPromise, adminSettingsPromise])
             .then(() => {
                 this.toast.success('Todas as configurações foram atualizadas com sucesso!', 'Sucesso');
+                this.adminSettingsForm.markAsPristine();
+                this.settingsForm.markAsPristine();
+                this.updateSaveButtonState();
             })
             .catch((error) => {
-                this.toast.error('Ocorreu um erro ao atualizar algumas configurações.', 'Erro');
             });
     }
 
@@ -266,30 +326,41 @@ export class SettingsComponent implements OnInit {
 
     private updateAdminSettingsAsync(): Promise<void> {
         return new Promise((resolve, reject) => {
-            if (this.adminSettingsForm.valid) {
+            this.isSaving = true;
+            if (this.adminSettingsForm.valid || this.isSaving) {
                 const updatedAdminSettings = this.adminSettingsForm.getRawValue();
                 delete updatedAdminSettings.perfil;
+                delete updatedAdminSettings.id;
 
                 const tokenTempo: TokenTempo = {
-                    id: this.adminSettingsId,
+                    id: this.isNewProfile ? null : this.adminSettingsId,
                     perfil: UserRole[this.selectedRole],
                     ...updatedAdminSettings
                 };
 
-                const operation = this.adminSettingsId
-                    ? this.tokenTempoService.update(this.adminSettingsId, tokenTempo)
-                    : this.tokenTempoService.create(tokenTempo);
+                const operation = this.isNewProfile
+                    ? this.tokenTempoService.create(tokenTempo)
+                    : this.tokenTempoService.update(this.adminSettingsId!, tokenTempo);
 
                 operation.subscribe({
-                    next: () => {
+                    next: (response) => {
+                        this.adminSettingsId = response.id;
+                        this.perfilId = response.id;
+                        this.isNewProfile = false;
+                        this.showIdField();
                         this.loadAdminSettings(this.selectedRole);
+                        this.isSaving = false;
                         resolve();
                     },
                     error: (error) => {
+                        this.toast.error('Erro ao atualizar configurações de admin.', 'Erro');
+                        this.isSaving = false;
                         reject(error);
                     }
                 });
             } else {
+                this.toast.error('Formulário de configurações de administrador inválido.', 'Erro');
+                this.isSaving = false;
                 reject(new Error('Formulário de configurações de administrador inválido.'));
             }
         });
@@ -402,9 +473,9 @@ export class SettingsComponent implements OnInit {
 
     translateRole(role: string): string {
         return {
-            'ROLE_ADMIN': 'Administrador',
-            'ROLE_TECNICO': 'Técnico',
-            'ROLE_CLIENTE': 'Cliente'
+            'ROLE_ADMIN': 'ADMIN',
+            'ROLE_TECNICO': 'TÉCNICO',
+            'ROLE_CLIENTE': 'CLIENTE'
         }[role] || 'Desconhecido';
     }
 
