@@ -1,10 +1,12 @@
 package com.luiz.helpdesk.resources;
 
+import com.luiz.helpdesk.domain.dtos.interfaces.ITokenTempoConvertido;
 import com.luiz.helpdesk.domain.dtos.TokenTempoDTO;
 import com.luiz.helpdesk.domain.enums.Perfil;
 import com.luiz.helpdesk.services.AuthService;
 import com.luiz.helpdesk.services.TokenTempoService;
 import com.luiz.helpdesk.services.UserDetailsServiceImpl;
+import com.luiz.helpdesk.services.exceptions.ObjectnotFoundException;
 import com.luiz.helpdesk.services.exceptions.UnauthorizedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +16,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.Optional;
-import java.util.Set;
 
 @RestController
 @RequestMapping(value = "/token-tempo")
@@ -75,6 +76,15 @@ public class TokenTempoResource {
             return ResponseEntity.ok(expirationTimeInMillis);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+    @GetMapping("/jwt-time")
+    public ResponseEntity<ITokenTempoConvertido> getConvertedTokenTempo(@RequestParam("perfil") Perfil perfil) {
+        try {
+            ITokenTempoConvertido convertido = tokenTempoService.getConvertedTokenTempo(perfil);
+            return ResponseEntity.ok(convertido);
+        } catch (ObjectnotFoundException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.luiz.helpdesk.domain.dtos;
 
 import com.luiz.helpdesk.domain.TokenTempo;
+import com.luiz.helpdesk.domain.dtos.interfaces.ITokenTempoConvertido;
 import com.luiz.helpdesk.domain.enums.Perfil;
 import com.luiz.helpdesk.security.UserSS;
 import com.luiz.helpdesk.services.TokenTempoService;
@@ -13,7 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class TokenTempoDTO implements Serializable {
+public class TokenTempoDTO implements Serializable, ITokenTempoConvertido {
     private static final long serialVersionUID = 1L;
 
     private Integer id;
@@ -25,7 +26,6 @@ public class TokenTempoDTO implements Serializable {
 
     private transient TokenTempoService tokenTempoService;
     private transient UserDetailsServiceImpl userDetailsService;
-
 
     public TokenTempoDTO() {
     }
@@ -64,6 +64,7 @@ public class TokenTempoDTO implements Serializable {
         this.tokenTempoExpiracaoMinutos = tokenTempoExpiracaoMinutos;
     }
 
+    @Override
     public BigDecimal getTempoTokenExibeDialogoMinutos() {
         return tempoTokenExibeDialogoMinutos;
     }
@@ -72,6 +73,7 @@ public class TokenTempoDTO implements Serializable {
         this.tempoTokenExibeDialogoMinutos = tempoTokenExibeDialogoMinutos;
     }
 
+    @Override
     public BigDecimal getTempoExibicaoDialogoAtualizaTokenMinutos() {
         return tempoExibicaoDialogoAtualizaTokenMinutos;
     }
@@ -80,6 +82,7 @@ public class TokenTempoDTO implements Serializable {
         this.tempoExibicaoDialogoAtualizaTokenMinutos = tempoExibicaoDialogoAtualizaTokenMinutos;
     }
 
+    @Override
     public BigDecimal getIntervaloAtualizacaoTokenMinutos() {
         return intervaloAtualizacaoTokenMinutos;
     }
@@ -108,11 +111,9 @@ public class TokenTempoDTO implements Serializable {
         if (tokenTempoService == null || userDetailsService == null) {
             throw new IllegalStateException("TokenTempoService ou UserDetailsService não foi inicializado");
         }
-
         try {
             UserSS userSS = (UserSS) userDetailsService.loadUserByUsername(email);
             Integer userId = userSS.getId();
-
             Set<Perfil> perfis = userSS.getRoles().stream()
                     .map(Perfil::fromDescricao)
                     .collect(Collectors.toSet());

@@ -123,9 +123,9 @@ public class DBService {
         observacaoRepository.saveAll(observacoes);
 
         List<TokenTempo> TokenTempos = Arrays.asList(
-                new TokenTempo(null, new BigDecimal("120"), new BigDecimal("30"), new BigDecimal("15"), new BigDecimal("1"), Perfil.ADMIN),
-                new TokenTempo(null, new BigDecimal("60"), new BigDecimal("30"), new BigDecimal("15"), new BigDecimal("1"), Perfil.CLIENTE),
-                new TokenTempo(null, new BigDecimal("30"), new BigDecimal("30"), new BigDecimal("15"), new BigDecimal("1"), Perfil.TECNICO)
+                new TokenTempo(null, new BigDecimal("30.155"), new BigDecimal("30"), new BigDecimal("15"), new BigDecimal("0.017"), Perfil.ADMIN),
+                new TokenTempo(null, new BigDecimal("60.125"), new BigDecimal("60"), new BigDecimal("1"), new BigDecimal("0.017"), Perfil.CLIENTE),
+                new TokenTempo(null, new BigDecimal("30.125"), new BigDecimal("30"), new BigDecimal("0.2"), new BigDecimal("0.017"), Perfil.TECNICO)
         );
 
         tokenTempoRepository.saveAll(TokenTempos);

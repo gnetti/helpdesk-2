@@ -1,27 +1,25 @@
-import {Injectable, OnDestroy} from '@angular/core';
-import {HttpClient, HttpHeaders, HttpResponse} from '@angular/common/http';
-import {JwtHelperService} from '@auth0/angular-jwt';
-import {API_CONFIG} from '../config/api.config';
-import {Credenciais} from '../models/credenciais';
-import {Observable, BehaviorSubject, Subject, interval, timer, Subscription} from 'rxjs';
-import {takeUntil, tap, filter, map} from 'rxjs/operators';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
-import {SessionExpiryDialogComponent} from '../components/session-expiry-dialog/session-expiry-dialog.component';
-import {Router} from '@angular/router';
-import {ThemeService} from './theme.service';
+import { Injectable, OnDestroy } from '@angular/core';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { JwtHelperService } from '@auth0/angular-jwt';
+import { API_CONFIG } from '../config/api.config';
+import { Credenciais } from '../models/credenciais';
+import { BehaviorSubject, interval, Observable, of, Subject, Subscription, timer } from 'rxjs';
+import { filter, map, switchMap, takeUntil, tap } from 'rxjs/operators';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { SessionExpiryDialogComponent } from '../components/session-expiry-dialog/session-expiry-dialog.component';
+import { Router } from '@angular/router';
+import { ThemeService } from './theme.service';
+import { UserRole } from "../components/enum/userRole";
+import { TokenTempoStateService } from "./TokenTempoStateService";
+import { ITokenTempo } from "../models/iTokenTempo";
 
 @Injectable({
     providedIn: 'root'
 })
 export class AuthService implements OnDestroy {
 
-    private readonly TEMPO_TOKEN_EXIBE_DIALOGO_MINUTOS = 30;
-    private readonly TEMPO_EXIBICAO_DIALOGO_ATUALIZA_TOKEN_MINUTOS = 0.15;
-    private readonly INTERVALO_ATUALIZACAO_TOKEN_MINUTOS = 0.017;
-
-    private readonly EXPIRATION_WARNING_TIME = this.minutesToMilliseconds(this.TEMPO_TOKEN_EXIBE_DIALOGO_MINUTOS);
-    private readonly DIALOG_DISPLAY_TIME = this.minutesToMilliseconds(this.TEMPO_EXIBICAO_DIALOGO_ATUALIZA_TOKEN_MINUTOS);
-    private readonly REFRESH_INTERVAL = this.minutesToMilliseconds(this.INTERVALO_ATUALIZACAO_TOKEN_MINUTOS);
+    private tokenTempoSubject = new BehaviorSubject<ITokenTempo | null>(null);
+    tokenTempo$ = this.tokenTempoSubject.asObservable();
 
     private jwtService: JwtHelperService = new JwtHelperService();
     private expirationWarning = new BehaviorSubject<boolean>(false);
@@ -36,7 +34,8 @@ export class AuthService implements OnDestroy {
         private http: HttpClient,
         private dialog: MatDialog,
         private router: Router,
-        private themeService: ThemeService
+        private themeService: ThemeService,
+        private tokenTempoStateService: TokenTempoStateService
     ) {
         this.startExpirationCheck();
     }
@@ -56,23 +55,21 @@ export class AuthService implements OnDestroy {
             localStorage.setItem('token_expiration', decodedToken.exp.toString());
         }
         this.setThemeFromToken(decodedToken);
-        this.checkTokenExpiration();
+        this.fetchTokenTempo().subscribe(() => {
+            this.checkTokenExpiration();
+        });
     }
 
     isAuthenticated(): Observable<boolean> {
         const token = localStorage.getItem('token');
-        return new Observable(subscriber => {
-            subscriber.next(token ? !this.jwtService.isTokenExpired(token) : false);
-            subscriber.complete();
-        });
+        return of(token ? !this.jwtService.isTokenExpired(token) : false);
     }
 
     logout(): void {
         if (this.isLogoutInitiated) return;
         this.isLogoutInitiated = true;
         localStorage.clear();
-        this.router.navigate(['/login']
-        );
+        this.router.navigate(['/login']);
     }
 
     getUserId(): number | null {
@@ -83,6 +80,30 @@ export class AuthService implements OnDestroy {
     getUserName(): string | null {
         const token = localStorage.getItem('token');
         return token ? this.jwtService.decodeToken(token)?.nome ?? null : null;
+    }
+
+    getUserAdminRole(): UserRole | null {
+        const token = localStorage.getItem('token');
+        if (!token) return null;
+        const decodedToken = this.jwtService.decodeToken(token);
+        const roles = decodedToken?.roles || [];
+        if (roles.includes('ROLE_ADMIN')) {
+            return UserRole.ADMIN;
+        }
+        const roleMap: { [key: string]: UserRole } = {
+            'ROLE_CLIENTE': UserRole.CLIENTE,
+            'ROLE_TECNICO': UserRole.TECNICO
+        };
+        for (const role of roles) {
+            if (role in roleMap) {
+                return roleMap[role];
+            }
+        }
+        return null;
+    }
+
+    getRoleName(role: UserRole): string {
+        return UserRole[role];
     }
 
     isUserIdOne(): boolean {
@@ -96,9 +117,7 @@ export class AuthService implements OnDestroy {
             'Authorization': `Bearer ${refreshToken}`
         });
         if (!refreshToken) {
-            return new Observable(subscriber => {
-                subscriber.error('Refresh token não encontrado.');
-            });
+            return of('Refresh token não encontrado.');
         }
         return this.http.post<string>(`${API_CONFIG.baseUrl}/auth/refresh-token`, {}, {
             observe: 'response',
@@ -114,6 +133,7 @@ export class AuthService implements OnDestroy {
                         localStorage.setItem('token_expiration', decodedToken.exp.toString());
                     }
                     this.setThemeFromToken(decodedToken);
+                    this.fetchTokenTempo().subscribe();
                     return newToken;
                 }
                 throw new Error('Token não retornado pelo servidor.');
@@ -138,20 +158,21 @@ export class AuthService implements OnDestroy {
             const now = new Date();
             const timeLeft = expirationDate.getTime() - now.getTime();
 
-            // Adicionando log do tempo restante
-            const minutesLeft = Math.floor(timeLeft / 60000);
-            const secondsLeft = Math.floor((timeLeft % 60000) / 1000);
-            console.log(`Tempo restante até a expiração do token: ${minutesLeft} minutos e ${secondsLeft} segundos`);
+            const tokenTempo = this.tokenTempoStateService.getTokenTempo();
+            if (!tokenTempo) return;
+
+            const EXPIRATION_WARNING_TIME = tokenTempo.tempoTokenExibeDialogoMinutos;
+            const DIALOG_DISPLAY_TIME = tokenTempo.tempoExibicaoDialogoAtualizaTokenMinutos;
 
             if (timeLeft <= 0) {
                 if (!this.sessionExpired) {
                     this.sessionExpired = true;
-                    this.startLogoutTimer(this.DIALOG_DISPLAY_TIME);
+                    this.startLogoutTimer(DIALOG_DISPLAY_TIME);
                 }
-            } else if (timeLeft <= this.EXPIRATION_WARNING_TIME && !this.hasShownExpiryDialog) {
+            } else if (timeLeft <= EXPIRATION_WARNING_TIME && !this.hasShownExpiryDialog) {
                 this.openSessionExpiryDialog(timeLeft);
                 this.hasShownExpiryDialog = true;
-            } else if (timeLeft > this.EXPIRATION_WARNING_TIME) {
+            } else if (timeLeft > EXPIRATION_WARNING_TIME) {
                 this.expirationWarning.next(false);
                 this.hasShownExpiryDialog = false;
             }
@@ -167,7 +188,8 @@ export class AuthService implements OnDestroy {
     }
 
     getDialogDisplayTime(): number {
-        return this.DIALOG_DISPLAY_TIME;
+        const tokenTempo = this.tokenTempoStateService.getTokenTempo();
+        return tokenTempo ? tokenTempo.tempoExibicaoDialogoAtualizaTokenMinutos : 0;
     }
 
     private startLogoutTimer(duration: number): void {
@@ -179,12 +201,15 @@ export class AuthService implements OnDestroy {
     }
 
     private startExpirationCheck(): void {
-        interval(this.REFRESH_INTERVAL).pipe(
-            takeUntil(this.destroy$),
-            filter(() => !!localStorage.getItem('token_expiration')),
-            tap(() => {
-                this.checkTokenExpiration();
-            })
+        this.tokenTempo$.pipe(
+            filter(tokenTempo => !!tokenTempo),
+            switchMap(tokenTempo =>
+                interval(tokenTempo!.intervaloAtualizacaoTokenMinutos).pipe(
+                    takeUntil(this.destroy$),
+                    filter(() => !!localStorage.getItem('token_expiration')),
+                    tap(() => this.checkTokenExpiration())
+                )
+            )
         ).subscribe();
     }
 
@@ -204,7 +229,47 @@ export class AuthService implements OnDestroy {
         });
     }
 
-    private minutesToMilliseconds(minutes: number): number {
-        return minutes * 60 * 1000;
+    fetchTokenTempo(): Observable<ITokenTempo | null> {
+        const userId = this.getUserId();
+        if (userId === 1) {
+            const staticTokenTempo: ITokenTempo = {
+                tempoTokenExibeDialogoMinutos: 30 * 60 * 1000,
+                tempoExibicaoDialogoAtualizaTokenMinutos: 15 * 60 * 1000,
+                intervaloAtualizacaoTokenMinutos: 1 * 60 * 1000
+            };
+            this.tokenTempoSubject.next(staticTokenTempo);
+            this.tokenTempoStateService.setTokenTempo(staticTokenTempo);
+            return of(staticTokenTempo);
+        }
+
+        const userRole = this.getUserAdminRole();
+        if (userRole === null) {
+            return of(null);
+        }
+        const roleName = this.getRoleName(userRole);
+
+        return this.tokenTempoStateService.fetchAndStoreTokenTempo(roleName).pipe(
+            map((response: unknown): ITokenTempo | null => {
+                if (this.isValidTokenTempo(response)) {
+                    return response;
+                }
+                return null;
+            }),
+            tap((tokenTempo: ITokenTempo | null) => {
+                if (tokenTempo) {
+                    this.tokenTempoSubject.next(tokenTempo);
+                }
+            })
+        );
+    }
+
+    private isValidTokenTempo(obj: unknown): obj is ITokenTempo {
+        return typeof obj === 'object' && obj !== null &&
+            'tempoTokenExibeDialogoMinutos' in obj &&
+            'tempoExibicaoDialogoAtualizaTokenMinutos' in obj &&
+            'intervaloAtualizacaoTokenMinutos' in obj &&
+            typeof (obj as ITokenTempo).tempoTokenExibeDialogoMinutos === 'number' &&
+            typeof (obj as ITokenTempo).tempoExibicaoDialogoAtualizaTokenMinutos === 'number' &&
+            typeof (obj as ITokenTempo).intervaloAtualizacaoTokenMinutos === 'number';
     }
 }

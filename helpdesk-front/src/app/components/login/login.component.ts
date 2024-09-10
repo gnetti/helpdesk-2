@@ -22,14 +22,14 @@ export class LoginComponent implements OnInit {
     constructor(
         private fb: FormBuilder,
         private toast: ToastrService,
-        private service: AuthService,
+        private authService: AuthService,
         private router: Router,
         private themeService: ThemeService,
         private cryptoService: CryptoService
     ) {
         this.loginForm = this.fb.group({
-            email: ['luiz@mail.com', [Validators.required, Validators.email]],
-            senha: ['AdminPass@1234', Validators.required]
+            email: ['curie@mail.com', [Validators.required, Validators.email]],
+            senha: ['Password@1234', Validators.required]
         });
     }
 
@@ -44,24 +44,42 @@ export class LoginComponent implements OnInit {
             const creds = this.loginForm.value;
             const encryptedPassword = this.cryptoService.encrypt(creds.senha);
             const encryptedCreds = {...creds, senha: encryptedPassword};
-            this.service.authenticate(encryptedCreds).subscribe(
+            this.authService.authenticate(encryptedCreds).subscribe(
                 (resposta: HttpResponse<string>) => {
                     const authToken = resposta.headers.get('Authorization')?.substring(7);
                     if (authToken) {
-                        this.service.successfulLogin(authToken);
-                        this.router.navigate(['']);
+                        this.authService.successfulLogin(authToken);
+                        this.onLoginSuccess();
                     }
                 },
                 () => {
                     this.toast.error('Usuário e/ou senha inválidos');
-                },
-                () => {
                     this.isLoadingResults = false;
                 }
             );
         } else {
             this.toast.warning('Preencha todos os campos corretamente');
         }
+    }
+
+    onLoginSuccess() {
+        this.authService.fetchTokenTempo().subscribe({
+            next: (tokenTempo) => {
+                if (tokenTempo) {
+                    this.router.navigate(['']);
+                } else {
+                    this.toast.warning('Login bem-sucedido, mas houve um erro ao carregar configurações. Algumas funcionalidades podem estar limitadas.');
+                    this.router.navigate(['']);
+                }
+            },
+            error: (err) => {
+                this.toast.warning('Login bem-sucedido, mas houve um erro ao carregar configurações. Algumas funcionalidades podem estar limitadas.');
+                this.router.navigate(['']);
+            },
+            complete: () => {
+                this.isLoadingResults = false;
+            }
+        });
     }
 
     toggleSenhaVisibility(): void {

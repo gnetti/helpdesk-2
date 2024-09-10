@@ -140,34 +140,36 @@ export class SettingsComponent implements OnInit {
     }
 
     loadAdminSettings(perfil: UserRole): void {
-        this.tokenTempoService.findByPerfil(UserRole[perfil]).subscribe({
-            next: (settings: TokenTempo | null) => {
-                if (settings) {
-                    this.adminSettingsId = settings.id;
-                    this.perfilId = settings.id;
-                    this.patchFormWithAdminSettings(settings);
-                    this.showTokenFields = true;
-                    this.originalAdminSettings = {...settings};
-                    this.adminSettingsForm.markAsPristine();
-                    this.updateSaveButtonState();
-                    this.isNewProfile = false;
-                    this.showIdField();
-                    this.shownNewProfileMessages[perfil] = false;
-                } else {
-                    this.initializeAdminSettingsWithDefaults();
-                    this.showToastForNewProfile(perfil);
+        if (this.authService.isUserIdOne()) {
+            this.tokenTempoService.findByPerfil(UserRole[perfil]).subscribe({
+                next: (settings: TokenTempo | null) => {
+                    if (settings) {
+                        this.adminSettingsId = settings.id;
+                        this.perfilId = settings.id;
+                        this.patchFormWithAdminSettings(settings);
+                        this.showTokenFields = true;
+                        this.originalAdminSettings = {...settings};
+                        this.adminSettingsForm.markAsPristine();
+                        this.updateSaveButtonState();
+                        this.isNewProfile = false;
+                        this.showIdField();
+                        this.shownNewProfileMessages[perfil] = false;
+                    } else {
+                        this.initializeAdminSettingsWithDefaults();
+                        this.showToastForNewProfile(perfil);
+                    }
+                },
+                error: (error: any) => {
+                    if (error === null || (typeof error === 'function' && error() === null)) {
+                        this.initializeAdminSettingsWithDefaults();
+                        this.showToastForNewProfile(perfil);
+                    }
+                    if (this.authService.isUserIdOne()) {
+                        this.toast.warning('Erro ao carregar configurações de admin.', 'Erro');
+                    }
                 }
-            },
-            error: (error: any) => {
-                if (error === null || (typeof error === 'function' && error() === null)) {
-                    this.initializeAdminSettingsWithDefaults();
-                    this.showToastForNewProfile(perfil);
-                }
-                if (this.authService.isUserIdOne()) {
-                    this.toast.warning('Erro ao carregar configurações de admin.', 'Erro');
-                }
-            }
-        });
+            });
+        }
     }
 
     private showToastForNewProfile(perfil: UserRole): void {

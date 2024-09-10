@@ -2,6 +2,7 @@ package com.luiz.helpdesk.services;
 
 import com.luiz.helpdesk.domain.TokenTempo;
 import com.luiz.helpdesk.domain.dtos.TokenTempoDTO;
+import com.luiz.helpdesk.domain.dtos.interfaces.ITokenTempoConvertido;
 import com.luiz.helpdesk.domain.enums.Perfil;
 import com.luiz.helpdesk.repositories.TokenTempoRepository;
 import com.luiz.helpdesk.security.UserSS;
@@ -106,6 +107,28 @@ public class TokenTempoService {
                 .orElseThrow(() -> new ObjectnotFoundException("Tempo de expiração não encontrado para o perfil: " + perfil));
 
         return convertToMilliseconds(tokenTempo.getTokenTempoExpiracaoMinutos());
+    }
+
+    public ITokenTempoConvertido getConvertedTokenTempo(Perfil perfil) {
+        TokenTempo tokenTempo = tokenTempoRepository.findByPerfil(perfil)
+                .orElseThrow(() -> new ObjectnotFoundException("TokenTempo não encontrado para o perfil: " + perfil));
+
+        return new ITokenTempoConvertido() {
+            @Override
+            public BigDecimal getTempoTokenExibeDialogoMinutos() {
+                return BigDecimal.valueOf(convertToMilliseconds(tokenTempo.getTempoTokenExibeDialogoMinutos()));
+            }
+
+            @Override
+            public BigDecimal getTempoExibicaoDialogoAtualizaTokenMinutos() {
+                return BigDecimal.valueOf(convertToMilliseconds(tokenTempo.getTempoExibicaoDialogoAtualizaTokenMinutos()));
+            }
+
+            @Override
+            public BigDecimal getIntervaloAtualizacaoTokenMinutos() {
+                return BigDecimal.valueOf(convertToMilliseconds(tokenTempo.getIntervaloAtualizacaoTokenMinutos()));
+            }
+        };
     }
 
     private long convertToMilliseconds(BigDecimal minutes) {

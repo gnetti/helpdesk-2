@@ -1,20 +1,23 @@
-import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
-import { Injectable } from '@angular/core';
-import { Observable, throwError, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
-import { API_CONFIG } from '../config/api.config';
-import { TokenTempo } from "../models/TokenTempo";
-import { AuthService } from './auth.service';
+import {HttpClient, HttpErrorResponse, HttpParams} from '@angular/common/http';
+import {Injectable} from '@angular/core';
+import {Observable, of, throwError} from 'rxjs';
+import {catchError, tap} from 'rxjs/operators';
+import {API_CONFIG} from '../config/api.config';
+import {TokenTempo} from "../models/TokenTempo";
+import {ITokenTempo} from "../models/iTokenTempo";
+import {TokenTempoStateService} from "./TokenTempoStateService";
 
 @Injectable({
     providedIn: 'root'
 })
 export class TokenTempoService {
-
-    constructor(private http: HttpClient, private authService: AuthService) {}
+    constructor(
+        private http: HttpClient,
+        private tokenTempoStateService: TokenTempoStateService
+    ) {
+    }
 
     private handleError(err: HttpErrorResponse): Observable<null> {
-        console.error('Erro ao processar operação de TokenTempo:', err);
         if (err.status === 404) {
             return of(null);
         }
@@ -22,39 +25,38 @@ export class TokenTempoService {
     }
 
     findByPerfil(perfil: string): Observable<TokenTempo | null> {
-        if (!this.authService.isUserIdOne()) {
-            return throwError(() => new Error('Acesso negado: Apenas o usuário com ID 1 tem acesso a essas configurações.'));
-        }
-
         const endpoint = `${API_CONFIG.baseUrl}/token-tempo/role`;
         const params = new HttpParams().set('perfil', perfil);
-
-        return this.http.get<TokenTempo>(endpoint, { params }).pipe(
+        return this.http.get<TokenTempo>(endpoint, {params}).pipe(
             catchError(err => this.handleError(err))
         );
     }
 
-    create(tokenTempoDTO: TokenTempo): Observable<TokenTempo> {
-        if (!this.authService.isUserIdOne()) {
-            return throwError(() => new Error('Acesso negado: Apenas o usuário com ID 1 tem acesso a essas configurações.'));
-        }
-
+    create(tokenTempo: TokenTempo): Observable<TokenTempo> {
         const endpoint = `${API_CONFIG.baseUrl}/token-tempo`;
-
-        return this.http.post<TokenTempo>(endpoint, tokenTempoDTO).pipe(
+        return this.http.post<TokenTempo>(endpoint, tokenTempo).pipe(
+            tap(createdTokenTempo => this.tokenTempoStateService.setTokenTempo(createdTokenTempo)),
             catchError(err => this.handleError(err))
         );
     }
 
-    update(id: number, tokenTempoDTO: TokenTempo): Observable<TokenTempo> {
-        if (!this.authService.isUserIdOne()) {
-            return throwError(() => new Error('Acesso negado: Apenas o usuário com ID 1 tem acesso a essas configurações.'));
-        }
-
+    update(id: number, tokenTempo: TokenTempo): Observable<TokenTempo> {
         const endpoint = `${API_CONFIG.baseUrl}/token-tempo/${id}`;
-
-        return this.http.put<TokenTempo>(endpoint, tokenTempoDTO).pipe(
+        return this.http.put<TokenTempo>(endpoint, tokenTempo).pipe(
+            tap(updatedTokenTempo => this.tokenTempoStateService.setTokenTempo(updatedTokenTempo)),
             catchError(err => this.handleError(err))
+        );
+    }
+
+    getConvertedTokenTempo(roleName: string): Observable<ITokenTempo | null> {
+        const endpoint = `${API_CONFIG.baseUrl}/token-tempo/jwt-time`;
+        const params = new HttpParams().set('perfil', roleName);
+
+        return this.http.get<ITokenTempo>(endpoint, {params}).pipe(
+            tap(tokenTempo => this.tokenTempoStateService.setTokenTempo(tokenTempo)),
+            catchError(error => {
+                return of(null);
+            })
         );
     }
 }
