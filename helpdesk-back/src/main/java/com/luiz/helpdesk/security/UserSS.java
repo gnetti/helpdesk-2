@@ -18,6 +18,7 @@ public class UserSS implements UserDetails {
     private final String nome;
     private final Collection<? extends GrantedAuthority> authorities;
     private final String tema;
+    private final Set<String> roles;
 
     public UserSS(Integer id, String email, String senha, Set<Perfil> perfis, String nome, String tema) {
         this.id = id;
@@ -27,7 +28,10 @@ public class UserSS implements UserDetails {
         this.tema = tema;
         this.authorities = perfis.stream()
                 .map(perfil -> new SimpleGrantedAuthority(perfil.getDescricao()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toUnmodifiableSet());
+        this.roles = perfis.stream()
+                .map(Perfil::getDescricao)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     public Integer getId() {
@@ -78,9 +82,6 @@ public class UserSS implements UserDetails {
     }
 
     public Set<String> getRoles() {
-        Set<String> roles = authorities.stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toSet());
         return roles;
     }
 }

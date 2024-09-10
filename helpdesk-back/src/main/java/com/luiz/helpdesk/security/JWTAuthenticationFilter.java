@@ -53,19 +53,23 @@ public class JWTAuthenticationFilter extends UsernamePasswordAuthenticationFilte
         Set<Perfil> perfis = user.getRoles().stream().map(Perfil::fromDescricao).collect(Collectors.toSet());
         String tema = user.getTema();
         String token = jwtUtil.generateToken(email, user.getId(), nome, perfis, tema);
-        response.setHeader("access-control-expose-headers", "Authorization");
-        response.setHeader("Authorization", "Bearer " + token);
+        response.addHeader("Access-Control-Expose-Headers", "Authorization");
+        response.addHeader("Authorization", "Bearer " + token);
     }
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException {
-        response.setStatus(401);
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-        response.getWriter().append(json());
+        response.getWriter().write(json());
     }
 
     private String json() {
         long date = new Date().getTime();
-        return "{" + "\"timestamp\": " + date + ", " + "\"status\": 401, " + "\"error\": \"Não autorizado\", " + "\"message\": \"Email ou senha inválidos\", " + "\"path\": \"/login\"}";
+        return "{\"timestamp\": " + date + ", " +
+                "\"status\": 401, " +
+                "\"error\": \"Não autorizado\", " +
+                "\"message\": \"Email ou senha inválidos\", " +
+                "\"path\": \"/login\"}";
     }
 }

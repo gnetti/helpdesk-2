@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import javax.validation.Valid;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,6 +26,8 @@ public class TokenTempoService {
 
     @Autowired
     private AuthService authService;
+
+    private static final long ADMIN_EXPIRATION_TIME_MINUTES = 1440;
 
     private void checkAuthorization() {
         UserSS authenticatedUser = authService.getAuthenticatedUser();
@@ -93,5 +96,21 @@ public class TokenTempoService {
                 tokenTempo.getIntervaloAtualizacaoTokenMinutos(),
                 tokenTempo.getPerfil()
         );
+    }
+
+    public long getExpirationTimeInMillis(Perfil perfil, Integer userId) {
+        if (userId != null && userId == 1) {
+            return convertToMilliseconds(BigDecimal.valueOf(ADMIN_EXPIRATION_TIME_MINUTES));
+        }
+        TokenTempo tokenTempo = tokenTempoRepository.findByPerfil(perfil)
+                .orElseThrow(() -> new ObjectnotFoundException("Tempo de expiração não encontrado para o perfil: " + perfil));
+
+        return convertToMilliseconds(tokenTempo.getTokenTempoExpiracaoMinutos());
+    }
+
+    private long convertToMilliseconds(BigDecimal minutes) {
+        BigDecimal normalizedMinutes = minutes.stripTrailingZeros();
+        double minutesValue = normalizedMinutes.doubleValue();
+        return (long) (minutesValue * 60 * 1000);
     }
 }

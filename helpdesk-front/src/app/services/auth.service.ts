@@ -17,7 +17,7 @@ export class AuthService implements OnDestroy {
 
     private readonly TEMPO_TOKEN_EXIBE_DIALOGO_MINUTOS = 30;
     private readonly TEMPO_EXIBICAO_DIALOGO_ATUALIZA_TOKEN_MINUTOS = 0.15;
-    private readonly INTERVALO_ATUALIZACAO_TOKEN_MINUTOS = 1;
+    private readonly INTERVALO_ATUALIZACAO_TOKEN_MINUTOS = 0.017;
 
     private readonly EXPIRATION_WARNING_TIME = this.minutesToMilliseconds(this.TEMPO_TOKEN_EXIBE_DIALOGO_MINUTOS);
     private readonly DIALOG_DISPLAY_TIME = this.minutesToMilliseconds(this.TEMPO_EXIBICAO_DIALOGO_ATUALIZA_TOKEN_MINUTOS);
@@ -137,6 +137,12 @@ export class AuthService implements OnDestroy {
             const expirationDate = new Date(Number(expirationTime) * 1000);
             const now = new Date();
             const timeLeft = expirationDate.getTime() - now.getTime();
+
+            // Adicionando log do tempo restante
+            const minutesLeft = Math.floor(timeLeft / 60000);
+            const secondsLeft = Math.floor((timeLeft % 60000) / 1000);
+            console.log(`Tempo restante até a expiração do token: ${minutesLeft} minutos e ${secondsLeft} segundos`);
+
             if (timeLeft <= 0) {
                 if (!this.sessionExpired) {
                     this.sessionExpired = true;

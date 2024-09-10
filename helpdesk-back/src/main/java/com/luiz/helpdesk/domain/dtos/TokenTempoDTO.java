@@ -2,10 +2,16 @@ package com.luiz.helpdesk.domain.dtos;
 
 import com.luiz.helpdesk.domain.TokenTempo;
 import com.luiz.helpdesk.domain.enums.Perfil;
+import com.luiz.helpdesk.security.UserSS;
+import com.luiz.helpdesk.services.TokenTempoService;
+import com.luiz.helpdesk.services.UserDetailsServiceImpl;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TokenTempoDTO implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -16,6 +22,10 @@ public class TokenTempoDTO implements Serializable {
     private BigDecimal tempoExibicaoDialogoAtualizaTokenMinutos;
     private BigDecimal intervaloAtualizacaoTokenMinutos;
     private Perfil perfil;
+
+    private transient TokenTempoService tokenTempoService;
+    private transient UserDetailsServiceImpl userDetailsService;
+
 
     public TokenTempoDTO() {
     }
@@ -84,6 +94,36 @@ public class TokenTempoDTO implements Serializable {
 
     public void setPerfil(Perfil perfil) {
         this.perfil = perfil;
+    }
+
+    public void setTokenTempoService(TokenTempoService tokenTempoService) {
+        this.tokenTempoService = tokenTempoService;
+    }
+
+    public void setUserDetailsService(UserDetailsServiceImpl userDetailsService) {
+        this.userDetailsService = userDetailsService;
+    }
+
+    public long getExpirationTimeInMillis(String email) {
+        if (tokenTempoService == null || userDetailsService == null) {
+            throw new IllegalStateException("TokenTempoService ou UserDetailsService não foi inicializado");
+        }
+
+        try {
+            UserSS userSS = (UserSS) userDetailsService.loadUserByUsername(email);
+            Integer userId = userSS.getId();
+
+            Set<Perfil> perfis = userSS.getRoles().stream()
+                    .map(Perfil::fromDescricao)
+                    .collect(Collectors.toSet());
+            Perfil perfilPrioritario = perfis.contains(Perfil.ADMIN) ? Perfil.ADMIN :
+                    perfis.contains(Perfil.TECNICO) ? Perfil.TECNICO :
+                            Perfil.CLIENTE;
+
+            return tokenTempoService.getExpirationTimeInMillis(perfilPrioritario, userId);
+        } catch (UsernameNotFoundException e) {
+            throw new RuntimeException("Usuário não encontrado para o email: " + email, e);
+        }
     }
 
     @Override
