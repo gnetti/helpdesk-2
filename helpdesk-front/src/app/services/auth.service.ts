@@ -1,17 +1,17 @@
-import { Injectable, OnDestroy } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
-import { JwtHelperService } from '@auth0/angular-jwt';
-import { API_CONFIG } from '../config/api.config';
-import { Credenciais } from '../models/credenciais';
-import { BehaviorSubject, interval, Observable, of, Subject, Subscription, timer } from 'rxjs';
-import { filter, map, switchMap, takeUntil, tap } from 'rxjs/operators';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { SessionExpiryDialogComponent } from '../components/session-expiry-dialog/session-expiry-dialog.component';
-import { Router } from '@angular/router';
-import { ThemeService } from './theme.service';
-import { UserRole } from "../components/enum/userRole";
-import { TokenTempoStateService } from "./TokenTempoStateService";
-import { ITokenTempo } from "../models/iTokenTempo";
+import {Injectable, OnDestroy} from '@angular/core';
+import {HttpClient, HttpHeaders, HttpResponse} from '@angular/common/http';
+import {JwtHelperService} from '@auth0/angular-jwt';
+import {API_CONFIG} from '../config/api.config';
+import {Credenciais} from '../models/credenciais';
+import {BehaviorSubject, interval, Observable, of, Subject, Subscription, timer} from 'rxjs';
+import {filter, map, switchMap, takeUntil, tap} from 'rxjs/operators';
+import {MatDialog, MatDialogRef} from '@angular/material/dialog';
+import {SessionExpiryDialogComponent} from '../components/session-expiry-dialog/session-expiry-dialog.component';
+import {Router} from '@angular/router';
+import {ThemeService} from './theme.service';
+import {UserRole} from "../components/enum/userRole";
+import {TokenTempoStateService} from "./TokenTempoStateService";
+import {ITokenTempo} from "../models/iTokenTempo";
 
 @Injectable({
     providedIn: 'root'
@@ -35,10 +35,12 @@ export class AuthService implements OnDestroy {
         private dialog: MatDialog,
         private router: Router,
         private themeService: ThemeService,
-        private tokenTempoStateService: TokenTempoStateService
+        private tokenTempoStateService: TokenTempoStateService,
+
     ) {
         this.startExpirationCheck();
     }
+
 
     authenticate(creds: Credenciais): Observable<HttpResponse<string>> {
         return this.http.post<string>(`${API_CONFIG.baseUrl}/login`, creds, {
@@ -49,10 +51,10 @@ export class AuthService implements OnDestroy {
     }
 
     successfulLogin(authToken: string): void {
-        localStorage.setItem('token', authToken);
+        sessionStorage.setItem('token', authToken);
         const decodedToken = this.jwtService.decodeToken(authToken);
         if (decodedToken?.exp) {
-            localStorage.setItem('token_expiration', decodedToken.exp.toString());
+            sessionStorage.setItem('token_expiration', decodedToken.exp.toString());
         }
         this.setThemeFromToken(decodedToken);
         this.fetchTokenTempo().subscribe(() => {
@@ -61,29 +63,29 @@ export class AuthService implements OnDestroy {
     }
 
     isAuthenticated(): Observable<boolean> {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         return of(token ? !this.jwtService.isTokenExpired(token) : false);
     }
 
     logout(): void {
         if (this.isLogoutInitiated) return;
         this.isLogoutInitiated = true;
-        localStorage.clear();
+        sessionStorage.clear();
         this.router.navigate(['/login']);
     }
 
     getUserId(): number | null {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         return token ? this.jwtService.decodeToken(token)?.id ?? null : null;
     }
 
     getUserName(): string | null {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         return token ? this.jwtService.decodeToken(token)?.nome ?? null : null;
     }
 
     getUserAdminRole(): UserRole | null {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) return null;
         const decodedToken = this.jwtService.decodeToken(token);
         const roles = decodedToken?.roles || [];
@@ -112,7 +114,7 @@ export class AuthService implements OnDestroy {
     }
 
     refreshToken(): Observable<string> {
-        const refreshToken = localStorage.getItem('token')?.replace('Bearer ', '');
+        const refreshToken = sessionStorage.getItem('token')?.replace('Bearer ', '');
         const headers = new HttpHeaders({
             'Authorization': `Bearer ${refreshToken}`
         });
@@ -127,10 +129,10 @@ export class AuthService implements OnDestroy {
             map(response => {
                 const newToken = response.body as string;
                 if (newToken) {
-                    localStorage.setItem('token', newToken);
+                    sessionStorage.setItem('token', newToken);
                     const decodedToken = this.jwtService.decodeToken(newToken);
                     if (decodedToken?.exp) {
-                        localStorage.setItem('token_expiration', decodedToken.exp.toString());
+                        sessionStorage.setItem('token_expiration', decodedToken.exp.toString());
                     }
                     this.setThemeFromToken(decodedToken);
                     this.fetchTokenTempo().subscribe();
@@ -151,8 +153,8 @@ export class AuthService implements OnDestroy {
     }
 
     private checkTokenExpiration(): void {
-        const token = localStorage.getItem('token');
-        const expirationTime = localStorage.getItem('token_expiration');
+        const token = sessionStorage.getItem('token');
+        const expirationTime = sessionStorage.getItem('token_expiration');
         if (token && expirationTime) {
             const expirationDate = new Date(Number(expirationTime) * 1000);
             const now = new Date();
@@ -206,7 +208,7 @@ export class AuthService implements OnDestroy {
             switchMap(tokenTempo =>
                 interval(tokenTempo!.intervaloAtualizacaoTokenMinutos).pipe(
                     takeUntil(this.destroy$),
-                    filter(() => !!localStorage.getItem('token_expiration')),
+                    filter(() => !!sessionStorage.getItem('token_expiration')),
                     tap(() => this.checkTokenExpiration())
                 )
             )

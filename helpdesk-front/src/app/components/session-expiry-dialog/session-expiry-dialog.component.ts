@@ -41,7 +41,7 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
         this.authService.refreshToken().subscribe(
             (authToken: string) => {
                 if (authToken) {
-                    localStorage.clear();
+                    sessionStorage.clear();
                     this.authService.successfulLogin(authToken);
                     this.closeDialog();
                 } else {
@@ -54,13 +54,13 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
 
     logout() {
         this.authService.logout();
-        localStorage.clear();
+        sessionStorage.clear();
         this.closeDialog();
         this.router.navigate(['/login']);
     }
 
     navigateToLogin() {
-        localStorage.clear();
+        sessionStorage.clear();
         this.closeDialog();
         this.router.navigate(['/login']);
     }
@@ -72,7 +72,7 @@ export class SessionExpiryDialogComponent implements OnInit, OnDestroy {
                 this.updateTimeDisplay();
             } else if (!this.sessionExpired) {
                 this.sessionExpired = true;
-                localStorage.clear();
+                sessionStorage.clear();
             }
         });
     }

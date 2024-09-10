@@ -139,7 +139,7 @@ export function initializeApp(authInitService: AuthInitService) {
             multi: true
         },
         AuthInterceptorProvider,
-        ThemeService
+        ThemeService,
     ],
     bootstrap: [AppComponent]
 })

@@ -37,7 +37,6 @@ export class TempoAvisoExpiracaoValidator {
             const tempoTokenExibeDialogoMinutosControl = formGroup.get('tempoTokenExibeDialogoMinutos');
 
             if (!tokenTempoExpiracaoMinutosControl || !tempoTokenExibeDialogoMinutosControl) {
-                console.log('Controles não encontrados');
                 return null;
             }
 

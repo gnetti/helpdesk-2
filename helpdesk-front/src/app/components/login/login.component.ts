@@ -28,7 +28,7 @@ export class LoginComponent implements OnInit {
         private cryptoService: CryptoService
     ) {
         this.loginForm = this.fb.group({
-            email: ['curie@mail.com', [Validators.required, Validators.email]],
+            email: ['darwin@mail.com', [Validators.required, Validators.email]],
             senha: ['Password@1234', Validators.required]
         });
     }

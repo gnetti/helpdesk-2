@@ -19,14 +19,13 @@ export class ThemeService {
         const themeFileName = ThemeConfig.getThemeFileName(theme);
         if (themeFileName) {
             this.themeLinkElement.href = `assets/theme/${themeFileName}`;
-            localStorage.setItem('theme', theme);
+            sessionStorage.setItem('theme', theme);
         } else {
-            console.error(`Tema "${theme}" não encontrado.`);
         }
     }
 
     getCurrentTheme(): Theme {
-        return localStorage.getItem('theme') as Theme || Theme.INDIGO_PINK;
+        return sessionStorage.getItem('theme') as Theme || Theme.INDIGO_PINK;
     }
 
     private createOrGetThemeLinkElement(): HTMLLinkElement {
